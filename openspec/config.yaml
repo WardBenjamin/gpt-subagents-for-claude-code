@@ -1,0 +1,13 @@
+schema: spec-driven
+
+context: |
+  Primary runtime is the Claude Desktop app's Code tab (Claude Code mods); the CLI is for automated testing only.
+  Commits follow Conventional Commits 1.0.0.
+
+rules:
+  specs:
+    - Self-contained, minimal, tidy; restate needed facts instead of linking
+    - Reference other repo docs only when unavoidable (they go stale)
+    - Describe only behavior that exists; unexecuted plans stay in changes/
+  proposal:
+    - State what is out of scope

@@ -1,0 +1,8 @@
+{
+  "id": "resp_calls", "object": "response", "status": "completed", "model": "gpt-6.1-sol",
+  "output": [
+    { "type": "function_call", "id": "fc_1", "call_id": "call_a", "name": "Read", "arguments": "{\"file_path\":\"/tmp/a.txt\"}" },
+    { "type": "function_call", "id": "fc_2", "call_id": "call_b", "name": "Bash", "arguments": "{\"command\": \"ls" }
+  ],
+  "usage": { "input_tokens": 10, "input_tokens_details": { "cached_tokens": 0 }, "output_tokens": 5, "total_tokens": 15 }
+}

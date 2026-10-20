@@ -1,0 +1,16 @@
+{
+  "name": "gpt-subagents",
+  "owner": { "name": "Ben Ward", "email": "opensource@blward.com" },
+  "metadata": { "description": "OpenAI GPT models as native Claude Code subagents." },
+  "plugins": [
+    {
+      "name": "gpt",
+      "source": "./src",
+      "description": "Run OpenAI GPT models (gpt:sol, gpt:astra, gpt:luna) as Claude Code subagents on the session's own tools.",
+      "homepage": "https://github.com/WardBenjamin/gpt-subagents-for-claude-code",
+      "repository": "https://github.com/WardBenjamin/gpt-subagents-for-claude-code",
+      "license": "MIT",
+      "keywords": ["openai", "gpt", "subagents", "agents", "mcp"]
+    }
+  ]
+}

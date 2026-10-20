@@ -1,0 +1,6 @@
+{
+  "id": "resp_inc", "object": "response", "status": "incomplete", "model": "gpt-6.1-sol",
+  "incomplete_details": { "reason": "max_output_tokens" },
+  "output": [{ "type": "message", "id": "msg_2", "role": "assistant", "content": [{ "type": "output_text", "text": "Partial" }] }],
+  "usage": { "input_tokens": 10, "input_tokens_details": { "cached_tokens": 0 }, "output_tokens": 5, "total_tokens": 15 }
+}

@@ -1,0 +1,16 @@
+[submodule "repos/claude-code"]
+	path = repos/claude-code
+	url = https://github.com/anthropics/claude-code.git
+	shallow = true
+[submodule "repos/claude-plugins-official"]
+	path = repos/claude-plugins-official
+	url = https://github.com/anthropics/claude-plugins-official.git
+	shallow = true
+[submodule "repos/codex-plugin-cc"]
+	path = repos/codex-plugin-cc
+	url = https://github.com/openai/codex-plugin-cc.git
+	shallow = true
+[submodule "repos/codex"]
+	path = repos/codex
+	url = https://github.com/openai/codex.git
+	shallow = true

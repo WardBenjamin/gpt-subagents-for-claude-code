@@ -1,0 +1,58 @@
+{
+  "name": "gpt",
+  "version": "0.2.0",
+  "description": "Run OpenAI GPT models as Claude Code subagents on the session's own tools",
+  "author": {
+    "name": "Ben Ward",
+    "email": "opensource@blward.com"
+  },
+  "homepage": "https://github.com/WardBenjamin/gpt-subagents-for-claude-code",
+  "repository": "https://github.com/WardBenjamin/gpt-subagents-for-claude-code",
+  "license": "MIT",
+  "keywords": [
+    "openai",
+    "gpt",
+    "subagents",
+    "agents",
+    "mcp"
+  ],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "effort": {
+      "type": "string",
+      "title": "GPT effort",
+      "required": false,
+      "default": "inherit",
+      "options": [
+        "inherit",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "description": "Reasoning effort for every GPT step. \"inherit\" (default) uses the Agent call's effort, else the session's; a level overrides both."
+    },
+    "maxSteps": {
+      "type": "number",
+      "title": "GPT step cap",
+      "required": false,
+      "default": 60,
+      "description": "A GPT run stops after this many model steps and reports that the cap was reached."
+    },
+    "maxUsd": {
+      "type": "number",
+      "title": "GPT cost cap (USD)",
+      "required": false,
+      "default": 5,
+      "description": "A GPT run stops once its estimated OpenAI cost reaches this many dollars."
+    },
+    "web": {
+      "type": "boolean",
+      "title": "GPT web access",
+      "required": false,
+      "default": false,
+      "description": "Give GPT OpenAI's hosted web search (search, open page, find in page), run at OpenAI under OpenAI's site access and safeguards, outside Claude Code's permissions. Each search costs $0.01 plus content tokens. Every web action is listed in the subagent's transcript."
+    }
+  }
+}
