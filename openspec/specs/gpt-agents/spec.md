@@ -97,7 +97,7 @@ When a `gpt:*` subagent is interrupted while GPT's response is in progress, that
 - **THEN** its in-progress OpenAI response ends `cancelled` within about a minute
 
 ### Requirement: Keep the bridge's run tools to the plugin
-The plugin SHALL refuse Claude's own calls to the bridge's `turn`, `wait` and `cancel` with a reason pointing to `Agent(subagent_type: "gpt:sol")`. It SHALL leave `health` callable.
+The plugin SHALL refuse Claude's own calls to the bridge's `turn`, `wait`, `result` and `cancel` with a reason pointing to `Agent(subagent_type: "gpt:sol")`. It SHALL leave `health` callable.
 
 #### Scenario: Claude calls turn directly
 - **WHEN** Claude calls `mcp__plugin_gpt_bridge__turn`

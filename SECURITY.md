@@ -5,7 +5,7 @@ The plugin handles an OpenAI API key and runs a model's tool calls on your machi
 **In scope:**
 - the bridge leaking the key, in a tool result, an error or a log;
 - GPT's tool calls escaping Claude Code's permission checks;
-- the bridge's `turn`, `wait` or `cancel` being callable by anything other than the plugin.
+- the bridge's `turn`, `wait`, `result` or `cancel` being callable by anything other than the plugin.
 
 **What the plugin does and doesn't protect:**
 - **Where the key comes from:** the macOS Keychain, the Linux Secret Service, an owner-only file, or `OPENAI_API_KEY`.

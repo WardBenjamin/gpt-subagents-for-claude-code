@@ -156,6 +156,11 @@ export async function waitTurn(ctx: Ctx, id: string, waitMs: number): Promise<Tu
   }
 }
 
+/** A stored response as a turn, read once. */
+export async function getTurn(ctx: Ctx, id: string): Promise<Turn> {
+  return toTurn(await request(ctx, 'GET', `/responses/${encodeURIComponent(id)}`, undefined, now(ctx) + 30_000))
+}
+
 /** Creates a background response, then waits on it for up to `waitMs` in total. */
 export async function startTurn(ctx: Ctx, a: TurnArgs, waitMs: number): Promise<Turn> {
   const t0 = now(ctx)

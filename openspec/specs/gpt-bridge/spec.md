@@ -23,6 +23,17 @@ The `wait` tool SHALL long-poll an existing response by `id`, up to `wait_ms`, a
 - **WHEN** a response takes three minutes and the caller repeats `wait` with `wait_ms` of 45 000
 - **THEN** each call returns within 50 s, and the first call after completion returns `status: "completed"` with the result
 
+### Requirement: Page a turn too long for one tool result
+Claude Code replaces a tool result over its MCP output cap (25K tokens by default) with a note that is not an error. A finished turn whose JSON is over a page (UTF-8 bytes, 90% of the cap's tokens) SHALL come from `turn` or `wait` as `{ id, status, pages, length }`. `result` SHALL return page `page` (from 0) as plain text, re-reading the stored response each time and holding nothing. The plugin SHALL fail the run when the pages' joined length differs from `length`.
+
+#### Scenario: One Write of a long report
+- **WHEN** a turn ends with a Write call whose content is 67 000 characters
+- **THEN** `turn` or `wait` returns `{ id, status: "completed", pages, length }`, and the `result` pages, joined in order, are the turn's JSON, `length` characters long
+
+#### Scenario: Claude Code swaps a page
+- **WHEN** Claude Code replaces or cuts a `result` page for its cap, even inside a string where the joined pages still parse
+- **THEN** the run fails naming the length mismatch, and no tool call from that turn runs
+
 ### Requirement: Report function calls and usage
 A finished turn SHALL list each function call as `{ call_id, name, args }` (with `args` parsed from JSON), its output text joined as `text` (followed by a `Sources:` list of any `url_citation` links, so web citations stay visible), its web actions as `webActions` (each `{ type, query?, url? }`), and token usage including cached input and cache writes.
 
