@@ -2,7 +2,7 @@
 
 Versions follow [Semantic Versioning](https://semver.org/). Entries come from the repository's Conventional Commits: `feat` under Added, `fix` under Fixed, and breaking changes (`!`) under Changed.
 
-## Unreleased
+## 0.2.1 – 2026-10-20
 
 ### Fixed
 

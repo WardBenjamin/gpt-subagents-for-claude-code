@@ -2,7 +2,7 @@
 
 `gpt` is a Claude Code plugin that runs OpenAI's GPT models as native Claude Code subagents. Claude dispatches `gpt:sol`, `gpt:astra` or `gpt:luna` with its ordinary `Agent` tool. What runs is a real subagent: it has its own transcript and task row, can run in the background, hands back a report, and takes `SendMessage` follow-ups. GPT answers every one of its model steps, so those steps use no Anthropic tokens. GPT's tool calls (`Read`, `Edit`, `Write`, `Bash`) run inside Claude Code under the session's own permission rules.
 
-This is an independent project. It isn't made or endorsed by Anthropic or OpenAI. **Status: 0.2.0, a preview.**
+This is an independent project. It isn't made or endorsed by Anthropic or OpenAI. **Status: 0.2.1, a preview.**
 
 ## How it works
 
