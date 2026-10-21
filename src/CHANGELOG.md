@@ -2,6 +2,12 @@
 
 Versions follow [Semantic Versioning](https://semver.org/). Entries come from the repository's Conventional Commits: `feat` under Added, `fix` under Fixed, and breaking changes (`!`) under Changed.
 
+## Unreleased
+
+### Fixed
+
+- A GPT step whose result is longer than Claude Code's MCP output cap (`MAX_MCP_OUTPUT_TOKENS`, 25K tokens by default), such as one Write of a long report, no longer fails the run with `JSON Parse error: Unexpected identifier "Error"`. Claude Code swaps such a result for a note that is not an error, so a finished turn longer than one page now comes as `{ id, status, pages, length }`. A page is 90% of the cap in UTF-8 bytes, which fits whatever the script, because a token is at least one byte. If Claude Code still swaps or cuts a page (a cap set on its side, unseen by the bridge), the pages' joined length gives it away and the run fails, so no tool runs on corrupted arguments. The plugin reads each page with the bridge's new `result` tool, which reads the stored response from OpenAI again each time, so the bridge holds nothing between calls. **Add `mcp__plugin_gpt_bridge__result` to your allow rules** (see the README), or auto mode refuses it. Any other reply that is not JSON now fails the run with its first 200 characters, not a bare parse error.
+
 ## 0.2.0 – 2026-10-20
 
 The first public release, a preview.

@@ -54,7 +54,7 @@ function settings(options: PluginOptions) {
     web: options.web === true,
   }
 }
-const BRIDGE_RUN_TOOLS = new Set(['mcp__plugin_gpt_bridge__turn', 'mcp__plugin_gpt_bridge__wait', 'mcp__plugin_gpt_bridge__cancel'])
+const BRIDGE_RUN_TOOLS = new Set(['mcp__plugin_gpt_bridge__turn', 'mcp__plugin_gpt_bridge__wait', 'mcp__plugin_gpt_bridge__result', 'mcp__plugin_gpt_bridge__cancel'])
 const BRIDGE_DENY = 'The gpt bridge runs GPT for the gpt plugin only; dispatch Agent(subagent_type: "gpt:sol") instead.'
 
 const PREAMBLE = [
@@ -85,11 +85,34 @@ async function recordSpend($: EngineInterface, model: string, usd: number, first
   }
 }
 
-async function bridge($: EngineInterface, tool: string, args: Record<string, unknown>): Promise<BridgeTurn> {
+async function call($: EngineInterface, tool: string, args: Record<string, unknown>): Promise<string> {
   const r = await $.mcp.call(BRIDGE, tool, args)
   const text = r.content.map(c => ('text' in c ? c.text : '')).join('')
   if (r.isError) throw new Error(text)
-  return JSON.parse(text) as BridgeTurn
+  return text
+}
+
+function parse(tool: string, text: string): any {
+  try {
+    return JSON.parse(text)
+  } catch {
+    // Such as the note Claude Code puts in place of a result over its MCP output cap, which is not an error.
+    throw new Error(`the bridge's ${tool} answered with no JSON: ${text.slice(0, 200)}`)
+  }
+}
+
+/** One bridge call; a finished turn too long for one MCP result comes as `{ id, status, pages, length }`, read with `result`. */
+async function bridge($: EngineInterface, tool: string, args: Record<string, unknown>): Promise<BridgeTurn> {
+  const t = parse(tool, await call($, tool, args))
+  if (t.pages === undefined) return t
+  let json = ''
+  for (let page = 0; page < t.pages; page++) json += await call($, 'result', { id: t.id, page })
+  // A page Claude Code swapped or cut for its cap could still parse, inside a Write's content say; its length can't match.
+  if (json.length !== t.length) {
+    const note = json.match(/Error: result \(.{0,180}|\[OUTPUT TRUNCATED.{0,180}/)?.[0]
+    throw new Error(`the bridge's result pages for ${t.id} came to ${json.length} of ${t.length} characters${note ? `: ${note}` : ''}`)
+  }
+  return parse('result', json)
 }
 
 /**

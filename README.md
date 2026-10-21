@@ -7,7 +7,7 @@ This is an independent project. It isn't made or endorsed by Anthropic or OpenAI
 ## How it works
 
 - **The mod** (`src/hooks/`) registers the three `gpt:*` agent types. It answers each model step of a `gpt:*` subagent with a GPT turn, and makes no Anthropic request for that step. Claude Code then runs GPT's tool calls as the subagent's own.
-- **The bridge** (`src/bridge/`) is a local stdio MCP server. It runs GPT turns on the OpenAI Responses API in background mode, through four tools: `turn`, `wait`, `cancel` and `health`. It reads your OpenAI key from the OS key store and strips the key from everything it returns. It has no npm dependencies.
+- **The bridge** (`src/bridge/`) is a local stdio MCP server. It runs GPT turns on the OpenAI Responses API in background mode, through five tools: `turn`, `wait`, `result`, `cancel` and `health`. It reads your OpenAI key from the OS key store and strips the key from everything it returns. It has no npm dependencies.
 
 ## Requirements
 
@@ -34,7 +34,8 @@ This is an independent project. It isn't made or endorsed by Anthropic or OpenAI
    ```json
    { "permissions": { "allow": [
      "mcp__plugin_gpt_bridge__turn", "mcp__plugin_gpt_bridge__wait",
-     "mcp__plugin_gpt_bridge__cancel", "mcp__plugin_gpt_bridge__health"
+     "mcp__plugin_gpt_bridge__result", "mcp__plugin_gpt_bridge__cancel",
+     "mcp__plugin_gpt_bridge__health"
    ] } }
    ```
 4. Start a new session, and ask Claude to call `mcp__plugin_gpt_bridge__health`. It should report `"key": "found"` and `"model": "available"`, and `gpt:sol`, `gpt:astra` and `gpt:luna` should be in Claude's agent list.
@@ -115,7 +116,7 @@ GPT's tool calls go through the same permission system as Claude's. How they're 
   - **Checking it:** in the CLI, `/status` shows "Auto mode server: Disabled". In any surface, the `gpt:*` agent descriptions say which kind of review applies, so Claude knows at dispatch whether GPT can edit.
   - **Caveats:** Anthropic documents the variable as temporary. The classifier's own requests count toward usage on Enterprise and API plans.
 
-Only the plugin may call the bridge's `turn`, `wait` and `cancel` tools; Claude can call `health`.
+Only the plugin may call the bridge's `turn`, `wait`, `result` and `cancel` tools; Claude can call `health`.
 
 ## Settings
 

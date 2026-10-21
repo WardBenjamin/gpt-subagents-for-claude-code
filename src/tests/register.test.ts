@@ -8,7 +8,7 @@ tier('user')
 type Turn = Record<string, unknown>
 
 /** The world beneath the mod: one subagent of `type`, its transcript, and a bridge answering `turns` in order. */
-function world(on: On, type: string, turns: Array<Turn | Error>, offersHandback = true, autoModeServer?: string) {
+function world(on: On, type: string, turns: Array<Turn | Error | string>, offersHandback = true, autoModeServer?: string) {
   const bridgeCalls: Array<{ tool: string; args: Record<string, unknown> }> = []
   let nextCalled = false
   on('session.start', ($, e) => ({ cwd: e.cwd }))
@@ -26,7 +26,7 @@ function world(on: On, type: string, turns: Array<Turn | Error>, offersHandback 
     bridgeCalls.push({ tool: e.tool, args: e.args })
     const t = turns.shift() ?? new Error('no scripted turn')
     if (t instanceof Error) return { value: { content: [{ type: 'text', text: t.message }], isError: true } }
-    return { value: { content: [{ type: 'text', text: JSON.stringify(t) }], isError: false } }
+    return { value: { content: [{ type: 'text', text: typeof t === 'string' ? t : JSON.stringify(t) }], isError: false } }
   })
   on('turn.step', async function* (_$, e) {
     nextCalled = true
@@ -97,6 +97,37 @@ describe('register', () => {
     expect(result.toolUses).toEqual([
       { name: 'SubagentHandback', input: { message: 'GPT run failed: OpenAI 401: Incorrect API key provided: [redacted].' } },
     ])
+  })
+
+  test('a paged turn is read back page by page with result', async ($, on) => {
+    const turn = { id: 'resp_big', status: 'completed', text: '', calls: [{ call_id: 'call_w', name: 'Write', args: { file_path: '/work/r.md', content: 'x'.repeat(30) } }] }
+    const json = JSON.stringify(turn)
+    const w = world(on, 'gpt:sol', [{ id: 'resp_big', status: 'completed', pages: 2, length: json.length }, json.slice(0, 40), json.slice(40)])
+    await start($)
+    const { result } = await step($)
+    expect(w.bridgeCalls.slice(1)).toEqual([{ tool: 'result', args: { id: 'resp_big', page: 0 } }, { tool: 'result', args: { id: 'resp_big', page: 1 } }])
+    expect(result.toolUses).toEqual([{ name: 'Write', input: turn.calls[0]!.args }])
+  })
+
+  test('a page Claude Code swapped for its note fails the run, even where the joined pages still parse', async ($, on) => {
+    const content = 'x'.repeat(300)
+    const json = JSON.stringify({ id: 'resp_big', status: 'completed', text: '', calls: [{ call_id: 'call_w', name: 'Write', args: { file_path: '/work/r.md', content } }] })
+    const note = '[OUTPUT TRUNCATED - exceeded 25000 token limit] The tool output was truncated.'
+    const at = json.indexOf(content) + 100 // the middle page lies inside the Write's content string
+    const w = world(on, 'gpt:sol', [{ id: 'resp_big', status: 'completed', pages: 3, length: json.length }, json.slice(0, at), note, json.slice(at + 100)])
+    await start($)
+    const { result } = await step($)
+    expect(w.bridgeCalls).toHaveLength(4)
+    expect(result.toolUses.map(u => u.name)).toEqual(['SubagentHandback']) // no Write runs
+    expect(JSON.stringify(result.toolUses)).toContain(`GPT run failed: the bridge's result pages for resp_big came to ${json.length - 100 + note.length} of ${json.length} characters: ${note}`)
+  })
+
+  test("a result that is not JSON, such as Claude Code's over-the-cap note, fails the run naming it", async ($, on) => {
+    const note = 'Error: result (69,218 characters) exceeds maximum allowed tokens. Output has been saved to /tmp/mcp-plugin_gpt_bridge-wait-1.txt'
+    world(on, 'gpt:sol', [note])
+    await start($)
+    const { result } = await step($)
+    expect(result.toolUses).toEqual([{ name: 'SubagentHandback', input: { message: `GPT run failed: the bridge's turn answered with no JSON: ${note}` } }])
   })
 
   test('the cost cap stops the run at the next step', async ($, on) => {
@@ -220,5 +251,7 @@ describe('register', () => {
     const call = $.tool.call as unknown as (input: object) => Promise<{ deny?: string }>
     const r = await call({ tool: 'mcp__plugin_gpt_bridge__turn', tool_use_id: 'toolu_x', model: 'gpt-6.1-sol', input: 'hi' })
     expect(r.deny).toContain('dispatch Agent(subagent_type: "gpt:sol")')
+    const page = await call({ tool: 'mcp__plugin_gpt_bridge__result', tool_use_id: 'toolu_y', id: 'resp_x', page: 0 })
+    expect(page.deny).toContain('dispatch Agent(subagent_type: "gpt:sol")')
   })
 })

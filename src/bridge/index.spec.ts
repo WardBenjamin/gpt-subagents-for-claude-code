@@ -2,15 +2,15 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createServer } from './index.ts'
+import { createServer, pageBytes, paginate } from './index.ts'
 import { NO_KEY } from './key.ts'
 import { fakeCtx, fixture, type Reply } from './testing.ts'
 
-async function connect(replies: Reply[], getKey = async () => 'sk-test-secret', abandonMs?: number) {
+async function connect(replies: Reply[], getKey = async () => 'sk-test-secret', abandonMs?: number, page?: number) {
   const { ctx, seen } = fakeCtx(replies)
   const { key: _, ...base } = ctx
   const [a, b] = InMemoryTransport.createLinkedPair()
-  await createServer({ ...base, getKey, abandonMs }).connect(a)
+  await createServer({ ...base, getKey, abandonMs, page }).connect(a)
   const client = new Client({ name: 'test', version: '0' })
   await client.connect(b)
   const call = async (name: string, args: Record<string, unknown> = {}) => {
@@ -20,9 +20,9 @@ async function connect(replies: Reply[], getKey = async () => 'sk-test-secret', 
   return { client, call, seen }
 }
 
-test('lists the four tools', async () => {
+test('lists the five tools', async () => {
   const { client } = await connect([])
-  assert.deepEqual((await client.listTools()).tools.map(t => t.name), ['turn', 'wait', 'cancel', 'health'])
+  assert.deepEqual((await client.listTools()).tools.map(t => t.name), ['turn', 'wait', 'result', 'cancel', 'health'])
 })
 
 test('turn → wait → completed, then cancel', async () => {
@@ -37,6 +37,45 @@ test('turn → wait → completed, then cancel', async () => {
   assert.equal(done.status, 'completed')
   assert.equal(done.calls.length, 2)
   assert.deepEqual(JSON.parse((await call('cancel', { id: 'resp_slow' })).text), { id: 'resp_slow', status: 'cancelled' })
+})
+
+test('a turn over the page size comes as pages, each read statelessly from OpenAI with result', async () => {
+  // The failed run's last step: one Write whose content was 67K characters of Markdown.
+  const content = 'Line with "quotes", a \\ backslash and \u00a7.\n'.repeat(1500)
+  const big = { ...fixture('function-calls'), output: [{ type: 'function_call', call_id: 'call_w', name: 'Write', arguments: JSON.stringify({ file_path: '/tmp/r.md', content }) }] }
+  const { call, seen } = await connect(Array.from({ length: 10 }, () => [200, big] as Reply))
+  const head = JSON.parse((await call('turn', { model: 'gpt-6.1-sol', input: 'hi' })).text)
+  const { pages, length } = head
+  assert.deepEqual(head, { id: 'resp_calls', status: 'completed', pages, length })
+  assert.equal(pages, 4) // about 75K bytes of JSON in pages of 22,500 bytes at the default 25K-token cap
+  const parts: string[] = []
+  for (const page of [3, 0, 2, 1]) { // any order: nothing is held between calls
+    const r = await call('result', { id: 'resp_calls', page })
+    assert.ok(!r.isError && Buffer.byteLength(r.text) <= pageBytes(), `page ${page}: ${Buffer.byteLength(r.text)} bytes`)
+    parts[page] = r.text
+  }
+  assert.equal(parts.join('').length, length)
+  assert.deepEqual(JSON.parse(parts.join('')).calls, [{ call_id: 'call_w', name: 'Write', args: { file_path: '/tmp/r.md', content } }])
+  assert.ok(seen.slice(1).every(s => s.init.method === 'GET' && s.url.endsWith('/responses/resp_calls')))
+  assert.deepEqual(await call('result', { id: 'resp_calls', page: pages }), { isError: true, text: 'page out of range' })
+})
+
+test('a page is 90% of MAX_MCP_OUTPUT_TOKENS in UTF-8 bytes, cut only between characters', async () => {
+  assert.deepEqual([pageBytes(NaN), pageBytes(0), pageBytes(10_000), pageBytes(25_000)], [22_500, 22_500, 9_000, 22_500])
+  // CJK is 3 bytes and an emoji 4 (two UTF-16 units): a token is at least a byte, so no page can pass the cap.
+  const dense = '鳥の歌、森の奥。🐦'.repeat(2_000)
+  const pages = paginate(JSON.stringify({ content: dense }), 9_000)
+  assert.ok(pages.every(p => Buffer.byteLength(p) <= 9_000 && !p.includes('\ufffd')))
+  assert.equal(JSON.parse(pages.join('')).content, dense)
+  const big = { ...fixture('function-calls'), output: [{ type: 'function_call', call_id: 'call_w', name: 'Write', arguments: JSON.stringify({ file_path: '/tmp/r.md', content: dense }) }] }
+  const { call } = await connect([[200, big], [200, big]], undefined, undefined, 9_000)
+  assert.ok(JSON.parse((await call('turn', { model: 'gpt-6.1-sol', input: 'hi' })).text).pages > 2)
+  assert.ok(Buffer.byteLength((await call('result', { id: 'resp_calls', page: 0 })).text) <= 9_000)
+})
+
+test('result refuses a turn still in progress', async () => {
+  const { call } = await connect([[200, fixture('in-progress')]])
+  assert.deepEqual(await call('result', { id: 'resp_slow', page: 0 }), { isError: true, text: 'turn resp_slow has not finished' })
 })
 
 test('replays the recorded live turn: queued → in_progress → function call', async () => {
@@ -157,7 +196,7 @@ test('over stdio with no node_modules: handshake, tools, ping, and JSON-RPC erro
   assert.equal(init.result.protocolVersion, '2025-06-18')
   assert.equal(init.result.serverInfo.name, 'bridge')
   p.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
-  assert.equal((await ask(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }))).result.tools.length, 4)
+  assert.equal((await ask(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }))).result.tools.length, 5)
   assert.deepEqual((await ask(JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'ping' }))).result, {})
   assert.equal((await ask(JSON.stringify({ jsonrpc: '2.0', id: 4, method: 'resources/list' }))).error.code, -32601)
   assert.equal((await ask('{not json')).error.code, -32700)

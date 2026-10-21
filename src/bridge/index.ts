@@ -2,11 +2,34 @@
 import { createInterface } from 'node:readline'
 import pkg from '../package.json' with { type: 'json' }
 import { getKey as defaultGetKey } from './key.ts'
-import { cancelTurn, modelAvailable, redact, startTurn, waitTurn, type Ctx } from './responses.ts'
+import { cancelTurn, getTurn, modelAvailable, redact, startTurn, waitTurn, type Ctx, type Turn } from './responses.ts'
 
 export const DEFAULT_WAIT_MS = 45_000
 /** A turn nobody has polled for this long is cancelled at OpenAI (its caller was stopped). */
 export const ABANDON_MS = 60_000
+/**
+ * Claude Code swaps a tool result over its MCP output cap (MAX_MCP_OUTPUT_TOKENS, which the bridge inherits;
+ * 25K tokens by default) for a note that is not an error, so a finished turn longer than one page comes as
+ * { id, status, pages, length }, read with `result`. A token is at least one byte, so a page of 90% of the cap
+ * in UTF-8 bytes always fits, whatever the script.
+ */
+// ponytail: a cap Claude Code sets remotely instead of through the variable is unseen; the hook's length check catches the swap.
+export function pageBytes(cap = Number(process.env.MAX_MCP_OUTPUT_TOKENS)): number {
+  return Math.max(4, Math.floor((cap > 0 ? cap : 25_000) * 0.9))
+}
+
+/** `json` cut into pages of at most `bytes` UTF-8 bytes each, never inside a character. */
+export function paginate(json: string, bytes: number): string[] {
+  const utf8 = new TextEncoder().encode(json)
+  const pages: string[] = []
+  for (let start = 0; start < utf8.length; ) {
+    let end = Math.min(start + bytes, utf8.length)
+    while (end < utf8.length && (utf8[end]! & 0xc0) === 0x80) end-- // a continuation byte: back up to the character's start
+    pages.push(new TextDecoder().decode(utf8.subarray(start, end)))
+    start = end
+  }
+  return pages
+}
 const HEALTH_MODEL = 'gpt-6.1-sol'
 /** MCP protocol versions the bridge speaks, newest first. It offers only tools, which none of these changed. */
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05']
@@ -38,6 +61,12 @@ const TOOLS = [
     description: 'Keep waiting on a turn started with turn; same result shape.',
     inputSchema: { type: 'object', required: ['id'], properties: { id, wait_ms: waitMs } },
   },
+  {
+    name: 'result',
+    description: 'A finished turn too long for one reply comes from turn or wait as { id, status, pages }. ' +
+      'This returns one page of it, read again from OpenAI each time; the pages joined in order are the turn as JSON.',
+    inputSchema: { type: 'object', required: ['id', 'page'], properties: { id, page: { type: 'number', description: 'Page number, from 0.' } } },
+  },
   { name: 'cancel', description: 'Cancel a running turn.', inputSchema: { type: 'object', required: ['id'], properties: { id } } },
   { name: 'health', description: 'Bridge version, whether an OpenAI key is found, and model access.', inputSchema: { type: 'object', properties: {} } },
 ]
@@ -54,21 +83,29 @@ function check(a: Args, required: string[], strings: string[], numbers: string[]
   if (a.tools !== undefined && !Array.isArray(a.tools)) return 'tools must be an array'
 }
 
-export function createServer(deps: Omit<Ctx, 'key' | 'signal'> & { getKey?: () => Promise<string>; abandonMs?: number }) {
-  const { getKey: readKey = () => defaultGetKey(), abandonMs = ABANDON_MS, ...base } = deps
+export function createServer(deps: Omit<Ctx, 'key' | 'signal'> & { getKey?: () => Promise<string>; abandonMs?: number; page?: number }) {
+  const { getKey: readKey = () => defaultGetKey(), abandonMs = ABANDON_MS, page = pageBytes(), ...base } = deps
   const keys = new Set<string>() // every key handed out, so the one exit below can strip it
   const getKey = async () => { const k = await readKey(); keys.add(k); return k }
 
   // Watchdog: each in-progress turn must be polled again within abandonMs, or it is cancelled.
   const watched = new Map<string, ReturnType<typeof setTimeout>>()
   const unwatch = (id: string) => (clearTimeout(watched.get(id)), watched.delete(id))
-  const watch = (key: string, turn: { id: string; status: string }) => {
+  const watch = <T extends { id: string; status: string }>(key: string, turn: T): T => {
     unwatch(turn.id)
     if (turn.status !== 'in_progress') return turn
     const timer = setTimeout(() => (watched.delete(turn.id), cancelTurn({ ...base, key }, turn.id).catch(() => undefined)), abandonMs)
     timer.unref?.()
     watched.set(turn.id, timer)
     return turn
+  }
+
+  // A turn as the JSON that is paged, redacted before it is cut so no key straddles two pages.
+  const json = (turn: Turn) => redact(JSON.stringify(turn), keys)
+  const reply = (turn: Turn) => {
+    const whole = json(turn)
+    const pages = paginate(whole, page).length
+    return pages > 1 ? text({ id: turn.id, status: turn.status, pages, length: whole.length }) : text(turn)
   }
 
   async function callTool(req: { name: string; arguments?: Args }, signal: AbortSignal) {
@@ -89,7 +126,7 @@ export function createServer(deps: Omit<Ctx, 'key' | 'signal'> & { getKey?: () =
       switch (req.name) {
         case 'turn': {
           const bad = check(a, ['model', 'input'], ['model', 'instructions', 'previous_response_id', 'effort'], ['max_output_tokens', 'wait_ms'])
-          return bad ? fail(bad) : text(watch(ctx.key, await startTurn(ctx, a as any, wait)))
+          return bad ? fail(bad) : reply(watch(ctx.key, await startTurn(ctx, a as any, wait)))
         }
         case 'wait': {
           const bad = check(a, ['id'], ['id'], ['wait_ms'])
@@ -97,7 +134,19 @@ export function createServer(deps: Omit<Ctx, 'key' | 'signal'> & { getKey?: () =
           const id = a.id as string
           unwatch(id)
           // A failed poll leaves the turn running at OpenAI: keep it under the watchdog.
-          return text(watch(ctx.key, await waitTurn(ctx, id, wait).catch(e => { watch(ctx.key, { id, status: 'in_progress' }); throw e })))
+          return reply(watch(ctx.key, await waitTurn(ctx, id, wait).catch(e => { watch(ctx.key, { id, status: 'in_progress' }); throw e })))
+        }
+        case 'result': {
+          const bad = check(a, ['id', 'page'], ['id'], [])
+          if (bad) return fail(bad)
+          const n = a.page as number
+          if (!Number.isInteger(n) || n < 0) return fail('page must be a whole number from 0')
+          // Stateless: a stored response no longer changes once finished, so every read pages the same JSON.
+          const turn = await getTurn(ctx, a.id as string)
+          if (turn.status === 'in_progress') return fail(`turn ${turn.id} has not finished`)
+          const pages = paginate(json(turn), page)
+          if (n >= pages.length) return fail('page out of range')
+          return { content: [{ type: 'text' as const, text: pages[n]! }], isError: false }
         }
         case 'cancel': {
           const bad = check(a, ['id'], ['id'], [])
