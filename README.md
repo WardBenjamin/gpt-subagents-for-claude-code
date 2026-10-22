@@ -120,16 +120,18 @@ Only the plugin may call the bridge's `turn`, `wait`, `result` and `cancel` tool
 
 ## Settings
 
-Set these in any of three ways:
+**In any session, Desktop included:** `/gpt settings` lists the settings with the values the session runs on. `/gpt settings <name> <value>` changes one, for example `/gpt settings webCacheOnly on`, `/gpt settings maxUsd 2` or `/gpt settings effort medium`. Booleans take `on` or `off`. Claude Code reloads the plugin when a setting changes, so the value applies from the session's next GPT step, in every open session. Change settings between GPT runs. If a session still shows the old value, run `/reload-plugins`.
 
-- **In a terminal session:** `/plugin configure gpt@gpt-subagents`, or `/config` under the `gpt` plugin. A change made in-session applies from the next GPT step.
-- **From the shell,** for any surface including Desktop, whose settings screen doesn't show plugin options:
+Desktop's own settings screens don't show plugin options for a marketplace you added, which is why the command exists. Other ways to change them:
+- **In a terminal session:** `/config` under the `gpt` plugin, or `/plugin configure gpt@gpt-subagents`.
+- **Ask Claude**, for example "turn on GPT web cache-only mode". It edits `settings.json` with its `/update-config` skill, under your usual permissions.
+- **From the shell:**
 
   ```sh
   echo '{"web":"true","webCacheOnly":"false"}' | claude plugin configure gpt@gpt-subagents --values-stdin
   ```
 
-  Values are strings, and options you leave out keep their values. `claude plugin configure gpt@gpt-subagents` with no input lists the options and which are set. Start a new session (or run `/reload-plugins`) to apply them.
+  Values are strings, and options you leave out keep their values. `claude plugin configure gpt@gpt-subagents` with no input lists the options and which are set.
 - **In `~/.claude/settings.json`,** under `pluginConfigs` (example under [Web access](#web-access)).
 
 | Setting | Default | Effect |
@@ -152,7 +154,7 @@ GPT's web access is OpenAI's hosted `web_search` tool, not Claude Code's. One to
 | live | on | off | `{ "type": "web_search" }`: live searches and page fetches. |
 | cached | on | on | `{ "type": "web_search", "external_web_access": false }`: OpenAI's cached copies only, never a live fetch, so some pages are missing. |
 
-**Switching.** Use any of the ways under [Settings](#settings). In `~/.claude/settings.json` they're keyed by the installed plugin's id:
+**Switching.** `/gpt settings web on`, then `/gpt settings webCacheOnly on` for cached mode, or any of the other ways under [Settings](#settings). In `~/.claude/settings.json` they're keyed by the installed plugin's id:
 
 ```json
 {
