@@ -2,6 +2,12 @@
 
 Versions follow [Semantic Versioning](https://semver.org/). Entries come from the repository's Conventional Commits: `feat` under Added, `fix` under Fixed, and breaking changes (`!`) under Changed.
 
+## 0.4.0 – 2026-10-22
+
+### Added
+
+- **`/gpt settings`** lists the plugin's settings with the values the session runs on. `/gpt settings <name> <value>` changes one, for example `/gpt settings webCacheOnly on`, in any session, Desktop included. Desktop's settings screens don't show plugin options for a marketplace you added. Values are checked against the setting's type before anything is saved. The value is saved through the session's `/config` row where it has one, and otherwise through `claude plugin configure`. Claude Code then reloads the plugin, so the change applies from the session's next GPT step.
+
 ## 0.3.0 – 2026-10-22
 
 ### Added
