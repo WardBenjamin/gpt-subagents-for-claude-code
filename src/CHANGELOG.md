@@ -2,6 +2,20 @@
 
 Versions follow [Semantic Versioning](https://semver.org/). Entries come from the repository's Conventional Commits: `feat` under Added, `fix` under Fixed, and breaking changes (`!`) under Changed.
 
+## 0.3.0 – 2026-10-22
+
+### Added
+
+- **Web modes.** A new **GPT web: cache only** setting, beside **GPT web access**, gives three modes. Off is the default. Live sends OpenAI's `web_search`. Cached sends it with `external_web_access: false`, which uses only OpenAI's cached pages.
+- **Web tools named in Claude's terms.** With web on, the `gpt:*` types are listed with `WebSearch` and `WebFetch`, and their description names the mode, so Claude prompts them like any agent with web tools. Claude Code's own `WebSearch` and `WebFetch` are refused for a GPT agent, so they never run for one.
+- **A web-activity list in every report.** A report from a run that used the web ends with a "Web activity (at OpenAI)" list, built from OpenAI's record of the run rather than from GPT's text. It holds each search and page opened or searched, plus each page GPT cited without opening, marked as found in search results or not seen. In auto mode, Claude used to see none of this. GPT is now told to say "opened" only for pages it opened.
+- The bridge returns the URLs each search consulted, and the URLs GPT cites. It asks OpenAI for `web_search_call.action.sources` on the create and on every read.
+- The README has a "Web access" section: modes, switching, what Claude sees, costs and limits.
+
+### Fixed
+
+- Web costs are no longer overstated. Only searches cost $0.01, counted as OpenAI counts them (`tool_usage.web_search.num_requests`). Opening a page or searching within it costs only its tokens; before, each was charged $0.01 too.
+
 ## 0.2.1 – 2026-10-20
 
 ### Fixed
