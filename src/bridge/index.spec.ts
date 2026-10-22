@@ -56,7 +56,7 @@ test('a turn over the page size comes as pages, each read statelessly from OpenA
   }
   assert.equal(parts.join('').length, length)
   assert.deepEqual(JSON.parse(parts.join('')).calls, [{ call_id: 'call_w', name: 'Write', args: { file_path: '/tmp/r.md', content } }])
-  assert.ok(seen.slice(1).every(s => s.init.method === 'GET' && s.url.endsWith('/responses/resp_calls')))
+  assert.ok(seen.slice(1).every(s => s.init.method === 'GET' && s.url.endsWith('/responses/resp_calls?include%5B%5D=web_search_call.action.sources')))
   assert.deepEqual(await call('result', { id: 'resp_calls', page: pages }), { isError: true, text: 'page out of range' })
 })
 
