@@ -3,7 +3,7 @@
 // request is made for it; the engine runs GPT's tool calls, the hand-back and resume natively.
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 import type { GptRun, GptRunInfo } from '../types'
-import { addToLedger, formatCost, formatStatus, type Ledger, type StatusRow, USAGE } from './gpt-command'
+import { addToLedger, formatCost, formatSettings, formatStatus, type Ledger, parseSetting, type Schema, type SettingValue, type StatusRow, USAGE } from './gpt-command'
 import { MANIFEST } from './manifest'
 import { addWeb, type BridgeTurn, endTurn, FRESH, offersHandback, planStep, report, type StepOut, stepFromTurn, withWeb } from './step'
 
@@ -96,6 +96,38 @@ async function instructions($: EngineInterface, readOnly: boolean, web: WebMode)
 }
 
 const thisMonth = () => new Date().toISOString().slice(0, 7)
+
+/** The plugin's `userConfig`, read from its own manifest so /gpt settings can't drift from it. */
+async function schema($: EngineInterface): Promise<Schema> {
+  return JSON.parse(await $.fs.read(`${$.plugin.root}/.claude-plugin/plugin.json`) as string).userConfig ?? {}
+}
+
+/**
+ * Saves one option. Where the session has the plugin's /config rows (an interactive terminal), through
+ * $.config.set, which writes and reloads the plugin. Elsewhere (Desktop, SDK) through `claude plugin configure`;
+ * Claude Code reloads an installed plugin when its user settings change.
+ */
+async function saveSetting($: EngineInterface, key: string, value: SettingValue): Promise<'config' | 'cli'> {
+  const row = (await $.config.list()).find(r => r.key === `${$.plugin.name}.${key}`)
+  if (row) {
+    const r = await $.config.set({ key: row.key, value })
+    if (r.deny !== undefined) throw new Error(r.deny)
+    return 'config'
+  }
+  const claude = (await $.env.get('CLAUDE_CODE_EXECPATH')) ?? 'claude'
+  const list = await $.process.run([claude, 'plugin', 'list', '--json'])
+  const listed = list.exitCode === 0 ? list.stdout.slice(Math.max(0, list.stdout.search(/^\[/m))) : '[]'
+  const plugins = JSON.parse(listed) as Array<{ id: string; installPath: string; enabled?: boolean }>
+  // A plugin from a folder marketplace runs from its folder, not the listed cache copy: then the one enabled
+  // plugin of this name. A --plugin-dir plugin isn't listed: Claude Code keys it `<name>@inline`, as Desktop does.
+  const named = plugins.filter(p => p.id.startsWith(`${$.plugin.name}@`) && p.enabled !== false)
+  const mine = plugins.find(p => p.installPath === $.plugin.root) ?? (named.length === 1 ? named[0] : undefined)
+  const argv = mine ? [claude, 'plugin', 'configure', mine.id, '--values-stdin']
+    : [claude, '--plugin-dir', $.plugin.root, 'plugin', 'configure', `${$.plugin.name}@inline`, '--values-stdin']
+  const r = await $.process.run(argv, { stdin: JSON.stringify({ [key]: String(value) }) })
+  if (r.exitCode !== 0) throw new Error(`claude plugin configure exited ${r.exitCode}: ${(r.stderr || r.stdout).trim().slice(0, 200)}`)
+  return 'cli'
+}
 
 /** Adds one GPT step's cost to the cross-session ledger. Never fails a step: the ledger is an estimate. */
 async function recordSpend($: EngineInterface, model: string, usd: number, firstStep: boolean): Promise<void> {
@@ -203,6 +235,24 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'gpt' }, async ($, e) => {
     const arg = e.args.trim()
+    const [sub, name, ...rest] = arg.split(/\s+/)
+    if (sub === 'settings') {
+      const spec = await schema($)
+      if (name === undefined) {
+        const running = { effort: cfg.effort, maxSteps: cfg.maxSteps, maxUsd: cfg.maxUsd, web: cfg.web !== 'off', webCacheOnly: options.webCacheOnly === true }
+        return { text: formatSettings(spec, running, cfg.web) }
+      }
+      const parsed = parseSetting(spec, name, rest.join(' '))
+      if ('error' in parsed) return { text: parsed.error }
+      try {
+        await saveSetting($, parsed.key, parsed.value)
+      } catch (err) {
+        return { text: `${parsed.key} was not saved: ${(err as Error).message}` }
+      }
+      const v = typeof parsed.value === 'boolean' ? (parsed.value ? 'on' : 'off') : String(parsed.value)
+      return { text: `Saved ${parsed.key} = ${v}. Claude Code reloads the plugin, so this session uses it from its next GPT step, ` +
+        'and other open sessions do too. If a session still shows the old value, run /reload-plugins. Change settings between GPT runs.' }
+    }
     if (arg === 'cost') {
       return { text: formatCost((await $.store.get('ledger')) as Ledger | undefined, thisMonth(), await sessionRows($, known)) }
     }

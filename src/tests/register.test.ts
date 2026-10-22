@@ -312,6 +312,90 @@ describe('register', () => {
     })
   }
 
+  /** A session for /gpt settings: the manifest's userConfig, /config rows or none, and the claude CLI. */
+  function settingsWorld(on: On, opts: { rows?: boolean; listed?: (root: string) => string; configureExit?: number } = {}) {
+    let root = ''
+    const runs: Array<{ argv: readonly string[]; stdin?: string }> = []
+    const sets: unknown[] = []
+    const userConfig = {
+      effort: { type: 'string', title: 'GPT effort', options: ['inherit', 'low', 'high'] },
+      maxUsd: { type: 'number', title: 'GPT cost cap (USD)' },
+      web: { type: 'boolean', title: 'GPT web access' },
+      webCacheOnly: { type: 'boolean', title: 'GPT web: cache only' },
+    }
+    on('session.start', ($, e) => ({ cwd: e.cwd }))
+    on('agent.register', ($, e) => ({ value: { agent: `gpt:${e.name}` } }))
+    on('command.register', ($, e) => ({ value: { command: e.name } }))
+    on('env.get', ($, e) => ({ value: e.name === 'CLAUDE_CODE_EXECPATH' ? '/opt/claude' : undefined }))
+    on('fs.read', ($, e) => {
+      if (!e.path.endsWith('/.claude-plugin/plugin.json')) return { value: '' }
+      root = e.path.slice(0, -'/.claude-plugin/plugin.json'.length)
+      return { value: JSON.stringify({ name: 'gpt', userConfig }) }
+    })
+    on('config.list', () => ({ value: opts.rows ? [{ key: 'gpt.webCacheOnly', label: 'GPT web: cache only', kind: 'boolean', value: false, provider: { plugin: 'gpt@gpt-subagents', tier: 'user' }, isLocked: false }] as any : [] }))
+    on('config.set', ($, e) => (sets.push({ key: e.key, value: e.value }), { value: e.value } as any))
+    on('process.run', ($, e) => {
+      runs.push({ argv: e.argv, stdin: e.init?.stdin as string | undefined })
+      if (e.argv.includes('list')) return { value: { exitCode: 0, stdout: opts.listed?.(root) ?? '[]', stderr: '' } as any }
+      return { value: { exitCode: opts.configureExit ?? 0, stdout: '', stderr: opts.configureExit ? 'Plugin not found' : '' } as any }
+    })
+    return { runs, sets }
+  }
+  const gpt = ($: Engine, args: string) => $.command.run({ command: 'gpt', args, origin: { kind: 'composer' } } as any)
+
+  test('/gpt settings lists each setting with its running value, what it takes, and the web mode', { options: { web: true, webCacheOnly: true, maxUsd: 3 } }, async ($, on) => {
+    settingsWorld(on)
+    await start($)
+    const text = (await gpt($, 'settings')).text
+    expect(text).toContain('effort        inherit   inherit | low | high  (GPT effort)')
+    expect(text).toContain('maxUsd        3         a number above 0')
+    expect(text).toContain('webCacheOnly  on        on | off')
+    expect(text).toContain('Web mode: cached.')
+  })
+
+  test('/gpt settings refuses an unknown name or a bad value, saving nothing', async ($, on) => {
+    const w = settingsWorld(on)
+    await start($)
+    expect((await gpt($, 'settings maxUsd lots')).text).toBe('maxUsd takes a number above 0.')
+    expect((await gpt($, 'settings effort huge')).text).toBe('effort takes inherit | low | high.')
+    expect((await gpt($, 'settings colour blue')).text).toContain('No setting "colour".')
+    expect(w.runs).toEqual([])
+    expect(w.sets).toEqual([])
+  })
+
+  test('/gpt settings saves through $.config.set where the session has the /config row', async ($, on) => {
+    const w = settingsWorld(on, { rows: true })
+    await start($)
+    expect((await gpt($, 'settings webcacheonly on')).text).toContain('Saved webCacheOnly = on.')
+    expect(w.sets).toEqual([{ key: 'gpt.webCacheOnly', value: true }])
+    expect(w.runs).toEqual([])
+  })
+
+  test('/gpt settings saves through claude plugin configure, by the installed id, where there are no rows', async ($, on) => {
+    const w = settingsWorld(on, { listed: root => 'warning: a note first\n' + JSON.stringify([{ id: 'gpt@gpt-subagents', installPath: root }, { id: 'other@x', installPath: '/elsewhere' }]) })
+    await start($)
+    expect((await gpt($, 'settings maxUsd 2.5')).text).toContain('Saved maxUsd = 2.5.')
+    expect(w.runs.map(r => r.argv)).toEqual([['/opt/claude', 'plugin', 'list', '--json'], ['/opt/claude', 'plugin', 'configure', 'gpt@gpt-subagents', '--values-stdin']])
+    expect(w.runs[1]?.stdin).toBe('{"maxUsd":"2.5"}')
+  })
+
+  test('/gpt settings finds a folder-marketplace plugin, which runs from its folder, by its one enabled id', async ($, on) => {
+    const w = settingsWorld(on, { listed: () => JSON.stringify([{ id: 'gpt@gpt-subagents', installPath: '/cache/gpt/0.3.0', enabled: true }, { id: 'gpt@old', installPath: '/cache/old', enabled: false }]) })
+    await start($)
+    await gpt($, 'settings effort low')
+    expect(w.runs[1]?.argv).toEqual(['/opt/claude', 'plugin', 'configure', 'gpt@gpt-subagents', '--values-stdin'])
+  })
+
+  test('/gpt settings configures a --plugin-dir plugin as gpt@inline, and reports a failed configure', async ($, on) => {
+    const w = settingsWorld(on, { configureExit: 1 })
+    await start($)
+    const text = (await gpt($, 'settings web off')).text
+    expect(w.runs[1]?.argv.slice(0, 2)).toEqual(['/opt/claude', '--plugin-dir'])
+    expect(w.runs[1]?.argv.slice(3)).toEqual(['plugin', 'configure', 'gpt@inline', '--values-stdin'])
+    expect(w.runs[1]?.stdin).toBe('{"web":"false"}')
+    expect(text).toBe('web was not saved: claude plugin configure exited 1: Plugin not found')
+  })
+
   test('a tiny nonzero cost never reads as zero', () => {
     expect([money(0), money(0.0000446), money(0.0042), money(0.042)]).toEqual(['$0.00', '<$0.0001', '$0.0042', '$0.04'])
   })
