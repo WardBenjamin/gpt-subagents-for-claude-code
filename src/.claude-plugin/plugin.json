@@ -1,6 +1,6 @@
 {
   "name": "gpt",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Run OpenAI GPT models as Claude Code subagents on the session's own tools",
   "author": {
     "name": "Ben Ward",
@@ -52,7 +52,14 @@
       "title": "GPT web access",
       "required": false,
       "default": false,
-      "description": "Give GPT OpenAI's hosted web search (search, open page, find in page), run at OpenAI under OpenAI's site access and safeguards, outside Claude Code's permissions. Each search costs $0.01 plus content tokens. Every web action is listed in the subagent's transcript."
+      "description": "Give GPT OpenAI's hosted web search: it searches, opens pages and finds text in them at OpenAI, under OpenAI's site access and safeguards, outside Claude Code's permissions. Claude sees it as WebSearch and WebFetch. Each search costs $0.01 plus content tokens. Every web action is listed in the transcript and at the end of the report."
+    },
+    "webCacheOnly": {
+      "type": "boolean",
+      "title": "GPT web: cache only",
+      "required": false,
+      "default": false,
+      "description": "With web access on, use only OpenAI's cached copies of pages (external_web_access: false): nothing is fetched live, so some pages are missing."
     }
   }
 }

@@ -1,0 +1,207 @@
+{
+  "id": "resp_0f13ecbfcca67c99006ada499776b087d2b837b8e7849bd021",
+  "object": "response",
+  "created_at": 1792690583,
+  "status": "completed",
+  "access_programs": null,
+  "background": true,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1792690594,
+  "error": null,
+  "frequency_penalty": 0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-6.1-sol",
+  "moderation": null,
+  "output": [
+    {
+      "id": "ws_0f13ecbfcca67c99006ada4999e92487d29d1ff54af779b448",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "site:nodejs.org/en/blog/release \"Node.js v26\""
+        ],
+        "query": "site:nodejs.org/en/blog/release \"Node.js v26\"",
+        "sources": [
+          {
+            "type": "url",
+            "url": "https://nodejs.org/tr/download/archive/v26.11.0"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/en/download/archive/v26.0.0"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/en/download/archive/v26.6.0"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/en/download/archive/v26.5.0"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/en/download/archive/v26.4.0"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/en/download/archive/v26.8.1"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/tr/about/previous-releases"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/en/download/archive/v26.12.0"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/ja/blog/release/v26.8.0"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/dist/latest/docs/api/all.html"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/es/about/previous-releases"
+          },
+          {
+            "type": "url",
+            "url": "https://nodejs.org/tr/download/archive/v26.1.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ws_0f13ecbfcca67c99006ada499dc4ec87d2ba3b37ef172fe552",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://nodejs.org/en/blog/release"
+      }
+    },
+    {
+      "id": "ws_0f13ecbfcca67c99006ada499f79f487d2830c2744aa374655",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "find_in_page",
+        "pattern": "Notable Changes",
+        "url": "https://nodejs.org/en/blog/release/v26.12.1"
+      }
+    },
+    {
+      "id": "msg_0f13ecbfcca67c99006ada49a0dc4487d2b2aebae1e3a651c6",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 158,
+              "start_index": 108,
+              "title": "Node.js",
+              "url": "https://nodejs.org/en/blog/release"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 366,
+              "start_index": 307,
+              "title": "Node.js — Node.js 26.12.1 (Current)",
+              "url": "https://nodejs.org/en/blog/release/v26.12.1"
+            }
+          ],
+          "logprobs": [],
+          "text": "The newest Node.js 26.x release announcement is **Node.js v26.12.1 (Current)**, dated **October 21, 2026**. ([nodejs.org](https://nodejs.org/en/blog/release))\n\nThe first item under **“Notable Changes”** is:\n> (CVE-2026-106069, CVE-2026-106072) tls: reject non-canonical IP addresses (Matteo Collina) – High ([nodejs.org](https://nodejs.org/en/blog/release/v26.12.1))"
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "low",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 1
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": null,
+        "country": "US",
+        "region": null,
+        "timezone": null
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 20964,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4490
+    },
+    "output_tokens": 246,
+    "output_tokens_details": {
+      "reasoning_tokens": 122
+    },
+    "total_tokens": 21210
+  },
+  "user": null,
+  "metadata": {}
+}

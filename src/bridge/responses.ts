@@ -12,13 +12,16 @@ export type Ctx = {
 
 export type Call = { call_id: string; name: string; args: unknown; argsError?: string }
 export type Usage = { input: number; cached: number; cacheWrite?: number; output: number }
-export type WebAction = { type: string; query?: string; url?: string }
+/** One web action at OpenAI: `query` is a search's query or a find-in-page pattern; `sources` are the URLs a search consulted. */
+export type WebAction = { type: string; query?: string; url?: string; sources?: string[] }
 export type Turn = {
   id: string
   status: 'in_progress' | 'completed' | 'failed' | 'cancelled' | 'incomplete'
   text?: string
   calls?: Call[]
   webActions?: WebAction[]
+  /** The URLs GPT's text cites (`url_citation`), each once. */
+  citations?: string[]
   usage?: Usage
   costUsd?: number | null
   reason?: string
@@ -51,7 +54,10 @@ const PRICES: Record<string, { input: number; cached: number; cacheWrite: number
   'gpt-6-luna': { input: 0.1, cached: 0.01, cacheWrite: 0.1, output: 0.5 },
 }
 const LONG_PROMPT = 272_000
-const WEB_SEARCH_USD = 10 / 1000 // per web_search call
+// A stored response's search sources come back only when asked for, on the create and on every read.
+const SOURCES = 'web_search_call.action.sources'
+const read = (id: string) => `/responses/${encodeURIComponent(id)}?include%5B%5D=${SOURCES}`
+const WEB_SEARCH_USD = 10 / 1000 // per search action; opening or searching a page costs only its tokens (OpenAI, 2026-10-22)
 
 const now = (ctx: Ctx) => (ctx.now ?? Date.now)()
 const sleep = (ctx: Ctx, ms: number) =>
@@ -61,7 +67,7 @@ const sleep = (ctx: Ctx, ms: number) =>
   })))(ms)
 
 /** Priced cost of a turn. Over 272K input tokens every input rate doubles and output is 1.5x (OpenAI). */
-export function costUsd(model: string, u: Usage, webCalls = 0): number | null {
+export function costUsd(model: string, u: Usage, searches = 0): number | null {
   const p = Object.entries(PRICES).find(([k]) => model.startsWith(k))?.[1]
   if (!p) return null
   const written = u.cacheWrite ?? 0
@@ -69,7 +75,7 @@ export function costUsd(model: string, u: Usage, webCalls = 0): number | null {
   const fresh = Math.max(0, u.input - u.cached - written)
   const [inX, outX] = u.input > LONG_PROMPT ? [2, 1.5] : [1, 1]
   const tokens = ((fresh * p.input + u.cached * p.cached + written * p.cacheWrite) * inX + u.output * p.output * outX) / 1e6
-  return tokens + webCalls * WEB_SEARCH_USD
+  return tokens + searches * WEB_SEARCH_USD
 }
 
 /**
@@ -112,7 +118,13 @@ export function toTurn(r: any): Turn {
   const text = cites.size ? `${body}\n\nSources:\n${[...cites].map(([url, title]) => `- [${title}](${url})`).join('\n')}` : body
   const webActions: WebAction[] = output
     .filter(o => o.type === 'web_search_call')
-    .map(o => ({ type: o.action?.type ?? 'search', query: o.action?.query ?? o.action?.queries?.[0], url: o.action?.url }))
+    .map(o => {
+      const a = o.action ?? {}
+      const sources: string[] = (a.sources ?? []).map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean)
+      return { type: a.type ?? 'search', query: a.query ?? a.queries?.[0] ?? a.pattern, url: a.url, ...(sources.length && { sources }) }
+    })
+  // OpenAI's own count of billed searches; else one per search action (page actions aren't billed).
+  const searches = r.tool_usage?.web_search?.num_requests ?? webActions.filter(a => a.type === 'search').length
   const calls: Call[] = output
     .filter(o => o.type === 'function_call')
     .map(o => {
@@ -130,8 +142,8 @@ export function toTurn(r: any): Turn {
   }
   const reason = r.status === 'incomplete' ? r.incomplete_details?.reason : r.status === 'failed' ? r.error?.message : undefined
   return {
-    id: r.id, status: r.status, text, calls, ...(webActions.length && { webActions }), usage,
-    costUsd: costUsd(r.model ?? '', usage, webActions.length), ...(reason && { reason }),
+    id: r.id, status: r.status, text, calls, ...(webActions.length && { webActions }), ...(cites.size && { citations: [...cites.keys()] }),
+    usage, costUsd: costUsd(r.model ?? '', usage, searches), ...(reason && { reason }),
   }
 }
 
@@ -143,7 +155,7 @@ export async function waitTurn(ctx: Ctx, id: string, waitMs: number): Promise<Tu
     if (ctx.signal?.aborted) return cancel()
     let turn: Turn
     try {
-      turn = toTurn(await request(ctx, 'GET', `/responses/${encodeURIComponent(id)}`, undefined, deadline))
+      turn = toTurn(await request(ctx, 'GET', read(id), undefined, deadline))
     } catch (e) {
       if (ctx.signal?.aborted) return cancel()
       if ((e as Error)?.name === 'TimeoutError') return { id, status: 'in_progress' } // the deadline cut the poll short
@@ -158,7 +170,7 @@ export async function waitTurn(ctx: Ctx, id: string, waitMs: number): Promise<Tu
 
 /** A stored response as a turn, read once. */
 export async function getTurn(ctx: Ctx, id: string): Promise<Turn> {
-  return toTurn(await request(ctx, 'GET', `/responses/${encodeURIComponent(id)}`, undefined, now(ctx) + 30_000))
+  return toTurn(await request(ctx, 'GET', read(id), undefined, now(ctx) + 30_000))
 }
 
 /** Creates a background response, then waits on it for up to `waitMs` in total. */
@@ -170,6 +182,8 @@ export async function startTurn(ctx: Ctx, a: TurnArgs, waitMs: number): Promise<
     instructions: a.instructions,
     previous_response_id: a.previous_response_id,
     tools: a.tools,
+    // The URLs each search consulted, so a report can tell a page GPT read from one it only saw listed.
+    include: a.tools?.some((t: any) => t?.type === 'web_search') ? [SOURCES] : undefined,
     max_output_tokens: a.max_output_tokens,
     reasoning: a.effort ? { effort: a.effort } : undefined,
     background: true,

@@ -1,6 +1,6 @@
 // Pure translation between a gpt:* subagent's transcript and GPT turns, and between a GPT turn
 // and a turn.step response (the chunks the hook yields and the result it returns).
-import type { GptRun } from '../types'
+import type { GptRun, GptRunWeb } from '../types'
 import { filterArgs } from './manifest'
 
 export type Msg = {
@@ -13,7 +13,8 @@ export type BridgeTurn = {
   status: string
   text?: string
   calls?: Array<{ call_id: string; name: string; args: unknown; argsError?: string }>
-  webActions?: Array<{ type: string; query?: string; url?: string }>
+  webActions?: Array<{ type: string; query?: string; url?: string; sources?: string[] }>
+  citations?: string[]
   usage?: { input: number; cached: number; output: number }
   costUsd?: number | null
   reason?: string
@@ -111,24 +112,72 @@ export function endTurn(): StepOut {
 /** Whether the engine offers this subagent SubagentHandback: its reminder is in the API transcript. */
 export const offersHandback = (apiMessages: unknown) => JSON.stringify(apiMessages).includes('delivered through SubagentHandback')
 
-/** One transcript line per web action GPT took at OpenAI, so its searches and pages stay visible. */
-export function webLines(t: BridgeTurn): string {
-  return (t.webActions ?? [])
-    .map(a => a.type === 'search' ? `[web] searched "${a.query ?? ''}"`
-      : a.type === 'open_page' ? `[web] opened ${a.url ?? ''}`
-      : `[web] ${a.type.replace(/_/g, ' ')}${a.url ? ` ${a.url}` : ''}${a.query ? ` "${a.query}"` : ''}`)
-    .join('\n')
+const WEB_KEEP = 50 // actions listed in a report; sources and citations are kept to ten times that
+/** A URL as cited and as listed by a search agree: no fragment, no utm_* tracking, no trailing slash. */
+export function normUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    u.hash = ''
+    for (const k of [...u.searchParams.keys()]) if (k.startsWith('utm_')) u.searchParams.delete(k)
+    return u.toString().replace(/\/$/, '')
+  } catch {
+    return url
+  }
 }
 
-/** A finished GPT turn as a step: its text and tool calls, or its answer as the report. */
-export function stepFromTurn(t: BridgeTurn, viaHandback: boolean): StepOut {
+/** The run's web activity with one turn's added: actions once each, plus the sources and citations seen. */
+export function addWeb(web: GptRunWeb | undefined, t: BridgeTurn): GptRunWeb | undefined {
+  if (!t.webActions?.length && !t.citations?.length) return web
+  const next: GptRunWeb = { actions: [...(web?.actions ?? [])], more: web?.more ?? 0, sources: [...(web?.sources ?? [])], cited: [...(web?.cited ?? [])] }
+  const key = (a: { type: string; query?: string; url?: string }) => `${a.type} ${a.query ?? ''} ${a.url ? normUrl(a.url) : ''}`
+  const have = new Set(next.actions.map(key))
+  for (const { sources, ...a } of t.webActions ?? []) {
+    if (!have.has(key(a))) {
+      have.add(key(a))
+      if (next.actions.length < WEB_KEEP) next.actions.push(a)
+      else next.more++
+    }
+    for (const u of sources ?? []) if (!next.sources.includes(normUrl(u))) next.sources.push(normUrl(u))
+  }
+  for (const u of t.citations ?? []) if (!next.cited.includes(normUrl(u))) next.cited.push(normUrl(u))
+  next.sources = next.sources.slice(-10 * WEB_KEEP)
+  next.cited = next.cited.slice(0, 10 * WEB_KEEP)
+  return next
+}
+
+/** The list that ends a report: what GPT did on the web, from OpenAI's record, then what it cited without reading. */
+export function webActivity(web: GptRunWeb | undefined): string {
+  if (!web || (!web.actions.length && !web.cited.length)) return ''
+  const read = new Set(web.actions.filter(a => a.url && a.type !== 'search').map(a => normUrl(a.url!)))
+  const lines = web.actions.map(a => `- ${webLine(a)}`)
+  if (web.more) lines.push(`- …and ${web.more} more web actions`)
+  for (const u of web.cited) if (!read.has(u)) lines.push(`- cited, not opened: ${u} (${web.sources.includes(u) ? 'in search results' : 'not seen'})`)
+  return `Web activity (at OpenAI):\n${lines.join('\n')}`
+}
+
+const webLine = (a: { type: string; query?: string; url?: string }) =>
+  a.type === 'search' ? `searched "${a.query ?? ''}"`
+    : a.type === 'open_page' ? `opened ${a.url ?? ''}`
+    : a.type === 'find_in_page' ? `searched in ${a.url ?? ''} for "${a.query ?? ''}"`
+    : `${a.type.replace(/_/g, ' ')}${a.url ? ` ${a.url}` : ''}${a.query ? ` "${a.query}"` : ''}`
+
+/** One transcript line per web action GPT took at OpenAI, so its searches and pages stay visible. */
+export function webLines(t: BridgeTurn): string {
+  return (t.webActions ?? []).map(a => `[web] ${webLine(a)}`).join('\n')
+}
+
+/** `message` with the run's web-activity list after it, when the run used the web. */
+export const withWeb = (message: string, web: GptRunWeb | undefined) => [message, webActivity(web)].filter(Boolean).join('\n\n')
+
+/** A finished GPT turn as a step: its text and tool calls, or its answer as the report, ending with `runWeb`'s list. */
+export function stepFromTurn(t: BridgeTurn, viaHandback: boolean, runWeb?: GptRunWeb): StepOut {
   const web = webLines(t)
   if (t.status !== 'completed') {
     const why = `GPT run ended: ${t.status}${t.reason ? ` (${t.reason})` : ''}.`
-    return report(t.text ? `${why}\n\n${t.text}` : why, t.id, viaHandback, web)
+    return report(withWeb(t.text ? `${why}\n\n${t.text}` : why, runWeb), t.id, viaHandback, web)
   }
   const calls = t.calls ?? []
-  if (calls.length === 0) return report(t.text || '(GPT finished without a message.)', t.id, viaHandback, web)
+  if (calls.length === 0) return report(withWeb(t.text || '(GPT finished without a message.)', runWeb), t.id, viaHandback, web)
   const text = [web, t.text ?? ''].filter(Boolean).join('\n\n')
 
   const chunks: Chunk[] = text ? [{ kind: 'text', index: 0, text }] : []

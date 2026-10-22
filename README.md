@@ -2,7 +2,7 @@
 
 `gpt` is a Claude Code plugin that runs OpenAI's GPT models as native Claude Code subagents. Claude dispatches `gpt:sol`, `gpt:astra` or `gpt:luna` with its ordinary `Agent` tool. What runs is a real subagent: it has its own transcript and task row, can run in the background, hands back a report, and takes `SendMessage` follow-ups. GPT answers every one of its model steps, so those steps use no Anthropic tokens. GPT's tool calls (`Read`, `Edit`, `Write`, `Bash`) run inside Claude Code under the session's own permission rules.
 
-This is an independent project. It isn't made or endorsed by Anthropic or OpenAI. **Status: 0.2.1, a preview.**
+This is an independent project. It isn't made or endorsed by Anthropic or OpenAI. **Status: 0.3.0, a preview.**
 
 ## How it works
 
@@ -127,9 +127,42 @@ Set these in `/config`, under the `gpt` plugin. A change applies from the next G
 | GPT effort | `inherit` | `inherit` uses the Agent call's effort, else the session's. A level from `low` to `max` overrides it for every GPT step. |
 | GPT step cap | 60 | A run stops after this many GPT steps. |
 | GPT cost cap (USD) | 5 | A run stops once its estimated OpenAI cost reaches this. An astra run reaches the default sooner. |
-| GPT web access | off | Gives GPT OpenAI's hosted web search. |
+| GPT web access | off | Gives GPT OpenAI's hosted web search. See [Web access](#web-access). |
+| GPT web: cache only | off | With web access on, uses only OpenAI's cached pages. See [Web access](#web-access). |
 
-**Web access** uses OpenAI's own web tools, not Claude Code's `WebFetch` or `WebSearch`. GPT searches, opens pages and finds text in them at OpenAI, so those reads happen outside Claude Code's permission system. That's why web access is off by default. Each web action is written into the subagent's transcript (`[web] searched "…"`, `[web] opened …`), and the pages GPT cites are listed under `Sources:`. Each search costs $0.01, plus the retrieved content at the model's rates.
+## Web access
+
+GPT's web access is OpenAI's hosted `web_search` tool, not Claude Code's. One tool does the jobs of both of Claude's web tools: it **searches** (Claude's `WebSearch`), and it **opens pages and finds text in them** (Claude's `WebFetch`). It all runs at OpenAI, under OpenAI's site access and safeguards, and outside Claude Code's permission system. That's why it's off by default.
+
+**Modes.** Two switches give three modes:
+
+| Mode | GPT web access | GPT web: cache only | What OpenAI gets |
+| --- | --- | --- | --- |
+| off | off | (ignored) | No web tool. |
+| live | on | off | `{ "type": "web_search" }`: live searches and page fetches. |
+| cached | on | on | `{ "type": "web_search", "external_web_access": false }`: OpenAI's cached copies only, never a live fetch, so some pages are missing. |
+
+**Switching.** Use `/config` and find the two rows under the `gpt` plugin. Or set them in `~/.claude/settings.json`, keyed by the installed plugin's id:
+
+```json
+{
+  "pluginConfigs": {
+    "gpt@gpt-subagents": { "options": { "web": true, "webCacheOnly": false } }
+  }
+}
+```
+
+A change applies from the next GPT step. The agent listing changes at the next session start.
+
+**What Claude sees.** With web on, the `gpt:*` types are listed with `WebSearch` and `WebFetch` after `Read`, `Edit`, `Write` and `Bash`, and their description names the mode. So Claude prompts them as it would any agent with web tools: "search for…", "read <url> and…". GPT uses the web only when the task needs it. Writing "no web" in the prompt keeps it off for that dispatch. Claude Code's own `WebSearch` and `WebFetch` never run for a GPT agent: the plugin refuses them.
+
+**What gets reported.** Each web action appears in the subagent's transcript as it happens (`[web] searched "…"`, `[web] opened …`). Pages GPT cites are listed under `Sources:`. The report Claude receives ends with a **Web activity** list, built by the plugin from OpenAI's record rather than from GPT's text. It covers every search and every page opened or searched in the run, then any page GPT cited without opening, marked as found in search results or not seen. GPT is also told to say "opened" only for pages it opened.
+
+**Costs.** Each search costs $0.01, as OpenAI counts searches, plus the retrieved content at the model's input rate. Opening or searching a page costs only its tokens. Both appear in `/gpt cost`.
+
+**Limits.**
+- OpenAI reaches public pages only, subject to its own site access: localhost and private network addresses can't be read.
+- There's no per-dispatch switch (the Agent tool can't carry one), no search-only or fetch-only mode (OpenAI's tool has none), and no domain filters yet.
 
 ## Costs
 
@@ -144,7 +177,7 @@ These figures are estimates from list prices; your OpenAI dashboard is the sourc
 
 - **Preview.** Behavior and settings may change before 1.0.
 - **Auto mode with server review is read-only for GPT**, apart from the scratchpad and allow-ruled folders (see "Permissions by mode").
-- **Tools:** GPT gets `Read`, `Edit`, `Write` and `Bash`, plus OpenAI web search if enabled. It doesn't get Claude Code's other tools, MCP servers or skills.
+- **Tools:** GPT gets `Read`, `Edit`, `Write` and `Bash`, plus OpenAI web search if enabled (listed to Claude as `WebSearch` and `WebFetch`). It doesn't get Claude Code's other tools, MCP servers or skills.
 - **Transcript labels:** GPT's entries in a subagent transcript carry the session's Claude model id. Desktop's transcript view shows that model rather than the GPT model. The token count Claude Code shows for a GPT subagent isn't Anthropic usage.
 - **Stopping a run** cancels its OpenAI response. The bridge also cancels any response nobody has polled for 60 seconds.
 - **Linux key stores** were checked in a Debian container, with gnome-keyring and headless, not on a full desktop. Windows is untested.

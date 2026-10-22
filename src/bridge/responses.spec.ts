@@ -62,12 +62,13 @@ test('each model is priced per million tokens, cache writes included', () => {
   assert.equal(costUsd('gpt-6.1-sol', small), (1000 * 2 + 1000 * 10) / 1e6) // no surcharge under 272K
 })
 
-test('web search calls are listed and cost $0.01 each; citations become a Sources list', () => {
+test('web actions are listed with sources; only searches cost $0.01; citations become a Sources list', () => {
   const t = toTurn({
     id: 'resp_web', status: 'completed', model: 'gpt-6-luna',
     output: [
-      { type: 'web_search_call', id: 'ws_1', status: 'completed', action: { type: 'search', query: 'claude code mods' } },
+      { type: 'web_search_call', id: 'ws_1', status: 'completed', action: { type: 'search', query: 'claude code mods', sources: [{ type: 'url', url: 'https://example.com/a' }, { type: 'url', url: 'https://example.com/b' }] } },
       { type: 'web_search_call', id: 'ws_2', status: 'completed', action: { type: 'open_page', url: 'https://example.com/a' } },
+      { type: 'web_search_call', id: 'ws_3', status: 'completed', action: { type: 'find_in_page', url: 'https://example.com/a', pattern: '2.1.287' } },
       { type: 'message', content: [{ type: 'output_text', text: 'Mods shipped in 2.1.287.', annotations: [
         { type: 'url_citation', url: 'https://example.com/a', title: 'Changelog', start_index: 0, end_index: 5 },
         { type: 'url_citation', url: 'https://example.com/a', title: 'Changelog', start_index: 6, end_index: 9 },
@@ -75,8 +76,13 @@ test('web search calls are listed and cost $0.01 each; citations become a Source
     ],
     usage: { input_tokens: 0, output_tokens: 0 },
   })
-  assert.deepEqual(t.webActions, [{ type: 'search', query: 'claude code mods', url: undefined }, { type: 'open_page', query: undefined, url: 'https://example.com/a' }])
-  assert.equal(t.costUsd, 0.02)
+  assert.deepEqual(t.webActions, [
+    { type: 'search', query: 'claude code mods', url: undefined, sources: ['https://example.com/a', 'https://example.com/b'] },
+    { type: 'open_page', query: undefined, url: 'https://example.com/a' },
+    { type: 'find_in_page', query: '2.1.287', url: 'https://example.com/a' },
+  ])
+  assert.deepEqual(t.citations, ['https://example.com/a'])
+  assert.equal(t.costUsd, 0.01) // one search; the page actions cost only their tokens
   assert.equal(t.text, 'Mods shipped in 2.1.287.\n\nSources:\n- [Changelog](https://example.com/a)')
 })
 
@@ -87,6 +93,13 @@ test('startTurn sends a background, stored request with effort and auth', async 
   assert.equal(seen[0]!.url, 'https://api.openai.com/v1/responses')
   assert.deepEqual([body.background, body.store, body.reasoning], [true, true, { effort: 'xhigh' }])
   assert.equal((seen[0]!.init.headers as Record<string, string>).Authorization, 'Bearer sk-test-secret')
+  assert.equal(body.include, undefined)
+})
+
+test('a request with web_search asks OpenAI for each search\'s sources', async () => {
+  const { ctx, seen } = fakeCtx([[200, fixture('completed-text')]])
+  await startTurn(ctx, { model: 'gpt-6.1-sol', input: 'hi', tools: [{ type: 'web_search', external_web_access: false }] }, 45_000)
+  assert.deepEqual(JSON.parse(String(seen[0]!.init.body)).include, ['web_search_call.action.sources'])
 })
 
 test('429 then success: caller sees only the result', async () => {
@@ -132,7 +145,20 @@ test('live fixture (gpt-6-luna + web_search, 2026-10-19): open_page action, Sour
   assert.deepEqual(t.webActions?.map(a => a.type), ['open_page'])
   assert.match(t.text ?? '', /\n\nSources:\n- \[Anthropic published an AI-native SDLC playbook/)
   assert.equal(t.usage?.cacheWrite, 4488)
-  assert.ok(t.costUsd! > 0.01 && t.costUsd! < 0.012)
+  assert.ok(t.costUsd! > 0 && t.costUsd! < 0.002) // OpenAI counts 0 web_search requests: tokens only
+})
+
+test('live fixture (gpt-6.1-sol, 2026-10-22): search with sources, open_page, find_in_page; one billed search', () => {
+  const t = toTurn(fixture('live-web-sources'))
+  assert.deepEqual(t.webActions?.map(a => [a.type, a.query ?? a.url]), [
+    ['search', 'site:nodejs.org/en/blog/release "Node.js v26"'],
+    ['open_page', 'https://nodejs.org/en/blog/release'],
+    ['find_in_page', 'Notable Changes'],
+  ])
+  assert.equal(t.webActions?.[0]?.sources?.length, 12)
+  assert.deepEqual(t.citations, ['https://nodejs.org/en/blog/release', 'https://nodejs.org/en/blog/release/v26.12.1'])
+  const tokens = costUsd('gpt-6.1-sol', t.usage!)!
+  assert.ok(Math.abs(t.costUsd! - tokens - 0.01) < 1e-9) // tool_usage.web_search.num_requests is 1
 })
 
 test('cancel posts to the cancel endpoint and returns the reported status', async () => {
@@ -176,7 +202,7 @@ test('a cancel during retry backoff cancels at OpenAI instead of retrying', asyn
   const { ctx, seen } = fakeCtx([[503, { error: { message: 'busy' } }], [200, { id: 'resp_slow', status: 'cancelled' }]])
   const t = await waitTurn({ ...ctx, signal: ac.signal, sleep: async () => ac.abort() }, 'resp_slow', 45_000)
   assert.equal(t.status, 'cancelled')
-  assert.deepEqual(seen.map(s => s.url.slice(25)), ['/responses/resp_slow', '/responses/resp_slow/cancel'])
+  assert.deepEqual(seen.map(s => s.url.slice(25)), ['/responses/resp_slow?include%5B%5D=web_search_call.action.sources', '/responses/resp_slow/cancel'])
 })
 
 test('a create that uses up the wait returns in_progress without polling', async () => {

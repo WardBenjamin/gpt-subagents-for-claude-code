@@ -15,6 +15,17 @@ export type GptRun = {
   handedBack: boolean
   /** The last SubagentHandback attempt, so a refused one can be re-sent as plain text. */
   report?: { id: string; message: string }
+  /** The run's web activity at OpenAI, for the list that ends the report. */
+  web?: GptRunWeb
+}
+
+/** A run's web activity: each action once, the URLs its searches listed, and the URLs GPT cited. */
+export type GptRunWeb = {
+  actions: Array<{ type: string; query?: string; url?: string }>
+  /** Actions past the cap, counted but not kept. */
+  more: number
+  sources: string[]
+  cited: string[]
 }
 
 /** One GPT run of this session: its type name (`sol`, `astra`, `luna`) and the Agent call's description. */
