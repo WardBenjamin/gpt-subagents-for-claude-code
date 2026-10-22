@@ -1,5 +1,5 @@
 import { describe, expect, test, tier } from 'claude-code/testing'
-import { endTurn, FRESH, offersHandback, planStep, report, stepFromTurn, toolUseId } from '../hooks/step'
+import { addWeb, endTurn, FRESH, normUrl, offersHandback, planStep, report, stepFromTurn, toolUseId, webActivity } from '../hooks/step'
 
 tier('user')
 
@@ -101,6 +101,18 @@ describe('step', () => {
   test('an incomplete turn hands back the reason and partial text', async () => {
     const out = stepFromTurn({ id: 'resp_5', status: 'incomplete', reason: 'max_output_tokens', text: 'Partial' }, true)
     expect(out.toolUses[0]).toEqual({ name: 'SubagentHandback', input: { message: 'GPT run ended: incomplete (max_output_tokens).\n\nPartial' } })
+  })
+
+  test('web activity: page searches listed, repeats kept once, the list capped at 50, nothing without web', async () => {
+    expect(webActivity(undefined)).toBe('')
+    const searches = Array.from({ length: 55 }, (_, i) => ({ type: 'search', query: `q${i}` }))
+    let web = addWeb(undefined, { id: 'r1', status: 'completed', webActions: [{ type: 'find_in_page', url: 'https://a.example/x#top', query: 'Notable' }, ...searches] })
+    web = addWeb(web, { id: 'r2', status: 'completed', webActions: [{ type: 'find_in_page', url: 'https://a.example/x', query: 'Notable' }] })
+    const lines = webActivity(web).split('\n')
+    expect(lines[1]).toBe('- searched in https://a.example/x#top for "Notable"')
+    expect(lines.length).toBe(1 + 50 + 1)
+    expect(lines.at(-1)).toBe('- …and 6 more web actions')
+    expect(normUrl('https://a.example/x/?utm_source=openai&v=2#h')).toBe('https://a.example/x/?v=2')
   })
 
   test('the end of a turn is a bare end_turn stop', async () => {

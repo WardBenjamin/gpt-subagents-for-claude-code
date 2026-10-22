@@ -12,7 +12,8 @@ function world(on: On, type: string, turns: Array<Turn | Error | string>, offers
   const bridgeCalls: Array<{ tool: string; args: Record<string, unknown> }> = []
   let nextCalled = false
   on('session.start', ($, e) => ({ cwd: e.cwd }))
-  on('agent.register', ($, e) => ({ value: { agent: `gpt:${e.name}` } }))
+  const registered: any[] = []
+  on('agent.register', ($, e) => (registered.push(e), { value: { agent: `gpt:${e.name}` } }))
   on('command.register', ($, e) => ({ value: { command: e.name } }))
   const agents: any[] = [{ id: 'agent1', type, description: 'task', status: 'running' }]
   on('agent.list', () => ({ value: agents }))
@@ -33,7 +34,7 @@ function world(on: On, type: string, turns: Array<Turn | Error | string>, offers
     yield { kind: 'text' as const, index: 0, text: 'claude answer' }
     return { turnId: e.turnId, index: e.index, answer: 'claude answer', toolUses: [], stopReason: 'end_turn' as const, usage: null }
   })
-  return { bridgeCalls, agents, nextCalled: () => nextCalled }
+  return { bridgeCalls, agents, registered, nextCalled: () => nextCalled }
 }
 
 async function step($: Engine, index = 0) {
@@ -177,6 +178,77 @@ describe('register', () => {
     const { chunks } = await step($)
     expect(w.bridgeCalls[0]?.args.tools).toContainEqual({ type: 'web_search' })
     expect(chunks[0]).toEqual({ kind: 'text', index: 0, text: '[web] searched "claude code mods"\n[web] opened https://example.com/a\n\nChecking the file too.' })
+  })
+
+  for (const [label, options, sent] of [
+    ['live', { web: true }, { type: 'web_search' }],
+    ['cached', { web: true, webCacheOnly: true }, { type: 'web_search', external_web_access: false }],
+  ] as const) {
+    test(`web ${label}: the type lists WebSearch and WebFetch, and GPT gets OpenAI's tool and the web rules`, { options }, async ($, on) => {
+      const w = world(on, 'gpt:sol', [{ id: 'resp_m', status: 'completed', text: 'ok', calls: [] }])
+      await start($)
+      await step($)
+      expect(w.registered[0].tools).toEqual(['Read', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch'])
+      expect(w.registered[0].description).toContain(label === 'cached' ? 'cache-only mode' : 'searches and reads public pages')
+      expect(w.bridgeCalls[0]?.args.tools).toContainEqual(sent)
+      expect(String(w.bridgeCalls[0]?.args.instructions)).toContain('Say you opened a page only if you opened it.')
+    })
+  }
+
+  for (const options of [{}, { web: false, webCacheOnly: true }]) {
+    test(`web off (${JSON.stringify(options)}): no web tools listed or sent, no web rules`, { options }, async ($, on) => {
+      const w = world(on, 'gpt:sol', [{ id: 'resp_o', status: 'completed', text: 'ok', calls: [] }])
+      await start($)
+      await step($)
+      expect(w.registered[0].tools).toEqual(['Read', 'Edit', 'Write', 'Bash'])
+      expect(JSON.stringify(w.bridgeCalls[0]?.args.tools)).not.toContain('web_search')
+      expect(String(w.bridgeCalls[0]?.args.instructions)).not.toContain('OpenAI web search')
+    })
+  }
+
+  test('the report ends with the run\'s web activity, across steps, marking what GPT cited without opening', { options: { web: true } }, async ($, on) => {
+    world(on, 'gpt:sol', [
+      { id: 'resp_w1', status: 'completed', text: '', costUsd: 0.01,
+        webActions: [{ type: 'search', query: 'node 26 release', sources: ['https://nodejs.org/en/blog/release/v26.12.1', 'https://github.com/nodejs/node/releases'] }],
+        calls: [{ call_id: 'call_1', name: 'Bash', args: { command: 'node --version' } }] },
+      { id: 'resp_w2', status: 'completed', text: 'Node 26.12.1 is out.',
+        webActions: [{ type: 'open_page', url: 'https://nodejs.org/en/blog/release/v26.12.1' }],
+        citations: ['https://nodejs.org/en/blog/release/v26.12.1?utm_source=openai', 'https://github.com/nodejs/node/releases', 'https://example.com/elsewhere'] },
+    ])
+    await start($)
+    await step($, 0)
+    const { result } = await step($, 1)
+    expect((result.toolUses[0]?.input as any).message).toBe([
+      'Node 26.12.1 is out.',
+      '',
+      'Web activity (at OpenAI):',
+      '- searched "node 26 release"',
+      '- opened https://nodejs.org/en/blog/release/v26.12.1',
+      '- cited, not opened: https://github.com/nodejs/node/releases (in search results)',
+      '- cited, not opened: https://example.com/elsewhere (not seen)',
+    ].join('\n'))
+  })
+
+  test('a run that never used the web reports no web activity', { options: { web: true } }, async ($, on) => {
+    world(on, 'gpt:sol', [{ id: 'resp_n2', status: 'completed', text: 'Done.', calls: [] }])
+    await start($)
+    const { result } = await step($)
+    expect((result.toolUses[0]?.input as any).message).toBe('Done.')
+  })
+
+  test("Claude Code's web tools never run for a gpt:* agent; Claude's own WebSearch passes", { options: { web: true } }, async ($, on) => {
+    world(on, 'gpt:sol', [{ id: 'resp_g', status: 'completed', text: '', calls: [{ call_id: 'call_1', name: 'Bash', args: { command: 'ls' } }] }])
+    let ran = 0
+    on('tool.call', () => (ran++, { result: 'searched' } as any))
+    await start($)
+    await step($) // the run is now known
+    const call = $.tool.call as unknown as (input: object) => Promise<{ deny?: string }>
+    const fromGpt = await call({ tool: 'WebFetch', url: 'https://example.com', prompt: 'read', agentId: 'agent1' })
+    expect(fromGpt.deny).toContain('runs at OpenAI')
+    expect(ran).toBe(0)
+    const fromClaude = await call({ tool: 'WebSearch', query: 'node 26', mode: 'standard' })
+    expect(fromClaude.deny).toBeUndefined()
+    expect(ran).toBe(1)
   })
 
   test('each GPT step adds its cost to the month\'s ledger, one run on the first step', async ($, on) => {

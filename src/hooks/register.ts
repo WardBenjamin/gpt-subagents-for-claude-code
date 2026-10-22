@@ -5,7 +5,7 @@ import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 import type { GptRun, GptRunInfo } from '../types'
 import { addToLedger, formatCost, formatStatus, type Ledger, type StatusRow, USAGE } from './gpt-command'
 import { MANIFEST } from './manifest'
-import { type BridgeTurn, endTurn, FRESH, offersHandback, planStep, report, type StepOut, stepFromTurn } from './step'
+import { addWeb, type BridgeTurn, endTurn, FRESH, offersHandback, planStep, report, type StepOut, stepFromTurn, withWeb } from './step'
 
 const BRIDGE = 'plugin:gpt:bridge'
 const WAIT_MS = 20_000 // bounds how long an interrupt takes to land; polls cost nothing at OpenAI
@@ -44,6 +44,8 @@ const TYPES: Record<string, { model: string; description: string }> = {
   luna: { model: 'gpt-6-luna', description: 'GPT-6 Luna (OpenAI): fast and cheapest ($0.10/$0.50 per M tokens), for simple, high-volume work.' },
 }
 
+type WebMode = 'off' | 'cached' | 'live'
+
 /** The plugin's settings (`userConfig`), with defaults for anything unset or out of range. */
 function settings(options: PluginOptions) {
   const num = (v: unknown, d: number) => (typeof v === 'number' && v > 0 ? v : d)
@@ -51,9 +53,29 @@ function settings(options: PluginOptions) {
     effort: typeof options.effort === 'string' && EFFORTS.includes(options.effort) ? options.effort : 'inherit',
     maxSteps: num(options.maxSteps, 60),
     maxUsd: num(options.maxUsd, 5),
-    web: options.web === true,
+    web: (options.web !== true ? 'off' : options.webCacheOnly === true ? 'cached' : 'live') as WebMode,
   }
 }
+
+// GPT's web access is OpenAI's hosted web_search, run at OpenAI under its site access and safeguards. It does
+// both of Claude's web tools' jobs (search; open and search pages), so the types list both names.
+const WEB_TOOLS = ['WebSearch', 'WebFetch']
+const webTool = (mode: WebMode) => (mode === 'cached' ? { type: 'web_search', external_web_access: false } : { type: 'web_search' })
+const WEB_NOTE: Record<WebMode, string> = {
+  off: '',
+  live: 'Its WebSearch and WebFetch are OpenAI\'s hosted web search, run at OpenAI outside Claude Code\'s permissions: ' +
+    'it searches and reads public pages when the task needs the web (never localhost or private URLs), and its report lists ' +
+    'what it searched and opened. Write "no web" in the prompt to keep it off the web.',
+  cached: 'Its WebSearch and WebFetch are OpenAI\'s hosted web search in cache-only mode, run at OpenAI outside Claude Code\'s ' +
+    'permissions: it searches and reads pages from OpenAI\'s cache, never fetching live, so some pages are missing; its report ' +
+    'lists what it searched and opened. Write "no web" in the prompt to keep it off the web.',
+}
+const WEB_DENY = 'GPT\'s web access runs at OpenAI (its hosted web search); Claude Code\'s WebSearch and WebFetch never run for a gpt:* agent.'
+const webRules = (mode: WebMode) => [
+  `You can search the web and open pages with OpenAI web search${mode === 'cached' ? ', from its cache only: live pages can\'t be fetched' : ''}.`,
+  'Use it only when the task needs current or outside information, and never when the task says not to use the web.',
+  'Say you opened a page only if you opened it. For a fact you saw only in search results, say so.',
+].join('\n')
 const BRIDGE_RUN_TOOLS = new Set(['mcp__plugin_gpt_bridge__turn', 'mcp__plugin_gpt_bridge__wait', 'mcp__plugin_gpt_bridge__result', 'mcp__plugin_gpt_bridge__cancel'])
 const BRIDGE_DENY = 'The gpt bridge runs GPT for the gpt plugin only; dispatch Agent(subagent_type: "gpt:sol") instead.'
 
@@ -65,10 +87,10 @@ const PREAMBLE = [
   'When the task is done, answer with a concise report for the orchestrating agent.',
 ].join('\n')
 
-async function instructions($: EngineInterface, readOnly: boolean): Promise<string> {
+async function instructions($: EngineInterface, readOnly: boolean, web: WebMode): Promise<string> {
   const cwd = await $.session.cwd()
   const claudeMd = await $.fs.read(`${cwd}/CLAUDE.md`).catch(() => '')
-  return [PREAMBLE, readOnly && SERVER_REVIEW_RULES, `Working directory: ${cwd}`, claudeMd && `Project instructions (CLAUDE.md):\n${claudeMd}`]
+  return [PREAMBLE, readOnly && SERVER_REVIEW_RULES, web !== 'off' && webRules(web), `Working directory: ${cwd}`, claudeMd && `Project instructions (CLAUDE.md):\n${claudeMd}`]
     .filter(Boolean)
     .join('\n\n')
 }
@@ -170,9 +192,9 @@ export const register: Register = (on, options) => {
     for (const [name, t] of Object.entries(TYPES)) {
       await $.agent.register({
         name,
-        description: `${t.description} Effort low..max.${cfg.web ? ' Has web search (OpenAI).' : ''} ${note}`,
+        description: [`${t.description} Effort low..max.`, WEB_NOTE[cfg.web], note].filter(Boolean).join(' '),
         prompt: `This agent is served by the gpt plugin: its model steps are answered by ${t.model}.`,
-        tools: ['Read', 'Edit', 'Write', 'Bash'],
+        tools: ['Read', 'Edit', 'Write', 'Bash', ...(cfg.web === 'off' ? [] : WEB_TOOLS)],
       })
     }
     await $.command.register({ name: 'gpt', description: 'GPT subagents: /gpt status (runs here), /gpt cost (spend by month)' })
@@ -188,9 +210,16 @@ export const register: Register = (on, options) => {
     return { text: formatStatus(await sessionRows($, known)) }
   })
 
-  // The bridge's run tools are the plugin's own; Claude dispatches gpt:sol instead. Only ever refuses.
-  on('tool.call', ($, e, next) =>
-    BRIDGE_RUN_TOOLS.has(e.tool) && next.origin?.plugin !== $.plugin.name ? { deny: BRIDGE_DENY } : next(e))
+  // The bridge's run tools are the plugin's own; Claude dispatches gpt:sol instead. And GPT's web is OpenAI's:
+  // Claude Code's web tools, listed for gpt:* types by name only, never run for one. Only ever refuses.
+  on('tool.call', async ($, e, next) => {
+    if (BRIDGE_RUN_TOOLS.has(e.tool) && next.origin?.plugin !== $.plugin.name) return { deny: BRIDGE_DENY }
+    if (WEB_TOOLS.includes(e.tool) && e.agentId !== undefined) {
+      await restore($, known)
+      if (known.runs.has(e.agentId)) return { deny: WEB_DENY }
+    }
+    return next(e)
+  })
 
   on('turn.step', async function* ($, e, next) {
     const id = e.agentId
@@ -227,7 +256,7 @@ export const register: Register = (on, options) => {
         saved = { ...run, report: undefined }
       } else if (run.steps >= cfg.maxSteps || run.costUsd >= cfg.maxUsd) {
         const cap = run.steps >= cfg.maxSteps ? `the ${cfg.maxSteps}-step cap` : `the $${cfg.maxUsd} cost cap`
-        out = report(`GPT run stopped: ${cap} was reached.`, seed, viaHandback)
+        out = report(withWeb(`GPT run stopped: ${cap} was reached.`, run.web), seed, viaHandback)
         saved = { ...run, pending: [], handedBack: true, report: out.report }
       } else {
         // The effort setting overrides; `inherit` uses the step's (the Agent call's, else the session's).
@@ -237,14 +266,14 @@ export const register: Register = (on, options) => {
           model,
           effort,
           // The engine offers SubagentHandback only in auto mode.
-          instructions: await instructions($, viaHandback && (await serverReview($))),
+          instructions: await instructions($, viaHandback && (await serverReview($)), cfg.web),
           input: plan.input,
           previous_response_id: plan.previous_response_id,
-          // Web access is OpenAI's own hosted tool, run at OpenAI under its site access and safeguards.
-          tools: cfg.web ? [...MANIFEST, { type: 'web_search' }] : MANIFEST,
+          tools: cfg.web === 'off' ? MANIFEST : [...MANIFEST, webTool(cfg.web)],
         }, next.signal)
         await recordSpend($, model, t.costUsd ?? 0, run.steps === 0)
-        out = stepFromTurn(t, viaHandback)
+        const web = addWeb(run.web, t)
+        out = stepFromTurn(t, viaHandback, web)
         saved = {
           responseId: t.id,
           pending: out.pending,
@@ -253,10 +282,11 @@ export const register: Register = (on, options) => {
           costUsd: run.costUsd + (t.costUsd ?? 0),
           handedBack: out.handedBack,
           report: out.report,
+          ...(web && { web }),
         }
       }
     } catch (err) {
-      out = report(`GPT run failed: ${(err as Error).message}`, seed, viaHandback)
+      out = report(withWeb(`GPT run failed: ${(err as Error).message}`, run.web), seed, viaHandback)
       saved = { ...run, pending: [], handedBack: true, report: out.report }
     }
     await $.state.set(ref, saved)
