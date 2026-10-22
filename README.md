@@ -120,7 +120,17 @@ Only the plugin may call the bridge's `turn`, `wait`, `result` and `cancel` tool
 
 ## Settings
 
-Set these in `/config`, under the `gpt` plugin. A change applies from the next GPT step.
+Set these in any of three ways:
+
+- **In a terminal session:** `/plugin configure gpt@gpt-subagents`, or `/config` under the `gpt` plugin. A change made in-session applies from the next GPT step.
+- **From the shell,** for any surface including Desktop, whose settings screen doesn't show plugin options:
+
+  ```sh
+  echo '{"web":"true","webCacheOnly":"false"}' | claude plugin configure gpt@gpt-subagents --values-stdin
+  ```
+
+  Values are strings, and options you leave out keep their values. `claude plugin configure gpt@gpt-subagents` with no input lists the options and which are set. Start a new session (or run `/reload-plugins`) to apply them.
+- **In `~/.claude/settings.json`,** under `pluginConfigs` (example under [Web access](#web-access)).
 
 | Setting | Default | Effect |
 | --- | --- | --- |
@@ -142,7 +152,7 @@ GPT's web access is OpenAI's hosted `web_search` tool, not Claude Code's. One to
 | live | on | off | `{ "type": "web_search" }`: live searches and page fetches. |
 | cached | on | on | `{ "type": "web_search", "external_web_access": false }`: OpenAI's cached copies only, never a live fetch, so some pages are missing. |
 
-**Switching.** Use `/config` and find the two rows under the `gpt` plugin. Or set them in `~/.claude/settings.json`, keyed by the installed plugin's id:
+**Switching.** Use any of the ways under [Settings](#settings). In `~/.claude/settings.json` they're keyed by the installed plugin's id:
 
 ```json
 {
@@ -152,7 +162,7 @@ GPT's web access is OpenAI's hosted `web_search` tool, not Claude Code's. One to
 }
 ```
 
-A change applies from the next GPT step. The agent listing changes at the next session start.
+The agent listing changes at the next session start.
 
 **What Claude sees.** With web on, the `gpt:*` types are listed with `WebSearch` and `WebFetch` after `Read`, `Edit`, `Write` and `Bash`, and their description names the mode. So Claude prompts them as it would any agent with web tools: "search for…", "read <url> and…". GPT uses the web only when the task needs it. Writing "no web" in the prompt keeps it off for that dispatch. Claude Code's own `WebSearch` and `WebFetch` never run for a GPT agent: the plugin refuses them.
 
