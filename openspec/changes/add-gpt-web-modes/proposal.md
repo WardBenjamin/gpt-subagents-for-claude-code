@@ -9,7 +9,7 @@ GPT's web access is a single on/off switch, and Claude can't see it in the terms
 
 ## What Changes
 
-- **Three web modes.** The `web` setting becomes `off` (default), `cached` or `live`. `cached` sends `web_search` with `external_web_access: false`; `live` sends it with OpenAI's defaults. A stored `true` from earlier versions means `live`, and `false` means `off`.
+- **Three web modes from two switches.** The existing `web` switch (off by default) gets a companion, `webCacheOnly`. Web off is `off`; web on is `live`, which sends `web_search` with OpenAI's defaults; web on plus cache-only is `cached`, which sends `external_web_access: false`. `web` stays a boolean because the engine rejects a stored setting that doesn't match its declared type, so a type change would stop the plugin loading for anyone who turned web on in 0.2.x.
 - **Listed in Claude's own terms.** With web on, the `gpt:*` types list `WebSearch` and `WebFetch` after `Read`, `Edit`, `Write` and `Bash`. Their description says both run at OpenAI (cache-only in `cached` mode), outside Claude Code's permissions, never reach localhost or private URLs, and are used only when the task needs the web. It also says that a prompt saying "no web" keeps GPT off it.
 - **Never Claude's tools.** GPT is still never offered Claude Code's `WebSearch` or `WebFetch`. The mod refuses either one if a `gpt:*` agent ever calls it, so a GPT run never starts an Anthropic web request.
 - **GPT's instructions** say the web is available, in which mode, and to use it only when the task needs current or outside information, never when the task says not to.
@@ -40,7 +40,7 @@ None.
 
 ## Impact
 
-- `src/.claude-plugin/plugin.json`: `web` becomes a string option (`off`, `cached`, `live`).
-- `src/hooks/register.ts`: settings parsing with the boolean fallback, the tool list and description, the per-mode `web_search` config, the GPT instruction, and the refusal of Claude's web tools for `gpt:*` agents.
+- `src/.claude-plugin/plugin.json`: a `webCacheOnly` switch beside `web`, and `web`'s description in Claude's terms.
+- `src/hooks/register.ts`: the mode from the two switches, the tool list and description, the per-mode `web_search` config, the GPT instruction, and the refusal of Claude's web tools for `gpt:*` agents.
 - `README.md`: the "Web access" section.
-- Tests for each mode, the fallback, the listing, and the refusal.
+- Tests for each mode, the listing, and the refusal.

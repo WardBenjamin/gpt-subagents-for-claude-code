@@ -22,7 +22,10 @@ The plugin SHALL read these settings from its `userConfig`, each shown in `/conf
 - effort: `inherit` (default) or `low` to `max`;
 - step cap (default 60);
 - cost cap in USD (default 5);
-- web access: `off` (default), `cached` or `live`. A stored `true` SHALL read as `live`, and `false` or any unknown value as `off`.
+- web access (default off);
+- web cache-only (default off), which applies only while web access is on.
+
+Web access off is the `off` mode, on is `live`, and on with cache-only is `cached`.
 
 A changed setting SHALL apply from the next GPT step.
 
@@ -31,8 +34,8 @@ A changed setting SHALL apply from the next GPT step.
 - **THEN** the next GPT step runs at `low`
 
 #### Scenario: Setting from an earlier version
-- **WHEN** the stored web setting is `true`
-- **THEN** GPT gets web access in `live` mode
+- **WHEN** the stored web setting is `true` and cache-only was never set
+- **THEN** the plugin loads and GPT gets web access in `live` mode
 
 ## ADDED Requirements
 

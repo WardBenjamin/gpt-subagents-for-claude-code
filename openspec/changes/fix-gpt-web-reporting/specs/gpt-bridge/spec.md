@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Report function calls and usage
-A finished turn SHALL list each function call as `{ call_id, name, args }` (with `args` parsed from JSON), its output text joined as `text` (followed by a `Sources:` list of any `url_citation` links, so web citations stay visible), its web actions as `webActions` (each `{ type, query?, url?, sources? }`, where `sources` lists the URLs a search consulted), and token usage including cached input and cache writes. A request that carries the `web_search` tool SHALL ask OpenAI to include `web_search_call.action.sources`.
+A finished turn SHALL list each function call as `{ call_id, name, args }` (with `args` parsed from JSON), its output text joined as `text` (followed by a `Sources:` list of any `url_citation` links, so web citations stay visible), its web actions as `webActions` (each `{ type, query?, url?, sources? }`, where `query` is a search's query or a find-in-page pattern and `sources` lists the URLs a search consulted), the cited URLs as `citations`, and token usage including cached input and cache writes. A create that carries the `web_search` tool, and every read of a stored response, SHALL ask OpenAI to include `web_search_call.action.sources`.
 
 #### Scenario: Turn ends with function calls
 - **WHEN** GPT answers with two function calls and no text
@@ -18,7 +18,7 @@ A finished turn SHALL list each function call as `{ call_id, name, args }` (with
 - **THEN** that search's entry in `webActions` lists all three URLs in `sources`
 
 ### Requirement: Price each turn
-`costUsd` SHALL be priced from a finished turn's usage at the model's rates per million tokens, plus $0.01 per web `search` action. Opening a page or searching within one SHALL add nothing beyond its tokens.
+`costUsd` SHALL be priced from a finished turn's usage at the model's rates per million tokens, plus $0.01 per web search, counted by OpenAI's `tool_usage.web_search.num_requests` where present and otherwise one per `search` action. Opening a page or searching within one SHALL add nothing beyond its tokens.
 
 | Model | Input | Cached input | Cache writes | Output |
 | --- | --- | --- | --- | --- |

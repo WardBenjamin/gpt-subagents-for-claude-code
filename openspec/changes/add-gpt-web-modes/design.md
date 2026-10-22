@@ -16,9 +16,9 @@
 ## Decisions
 
 - **Name OpenAI's tool after Claude's two.** `search` is `WebSearch`'s job, and `open_page` plus `find_in_page` are `WebFetch`'s. Since one OpenAI tool does both, web-on lists both names. Claude then prompts GPT the way it prompts any agent with those tools ("search for…", "read <url>…"), and nothing new has to be learned.
-- **Modes are about freshness, not tools.** There's no honest way to offer search without fetch, so the modes are `off`, `cached` (`external_web_access: false`) and `live`. `cached` suits work that should never fetch a live page, such as a page that changes or one that might carry a prompt injection aimed at the run.
+- **Modes are about freshness, not tools.** There's no honest way to offer search without fetch, so the modes are `off`, `cached` (`external_web_access: false`) and `live`. They come from two switches, `web` and `webCacheOnly`, not one string setting: the engine checks stored options against `plugin.json`'s types and won't load a plugin whose stored `web: true` no longer fits. `cached` suits work that should never fetch a live page, such as a page that changes or one that might carry a prompt injection aimed at the run.
 - **Listed but never run.** Putting `WebSearch` and `WebFetch` in the type's tools lets the engine accept those names from the agent. GPT can't emit them, because they aren't in its function manifest. As a second guarantee, the mod's `tool.call` hook refuses both for `gpt:*` agents, with a reason saying GPT's web runs at OpenAI.
-- **Compatibility.** `options.web === true` reads as `live` and `false` as `off`. Any other unknown value reads as `off`.
+- **Compatibility.** A stored `web: true` keeps meaning live web, with no migration. `webCacheOnly` does nothing while `web` is off.
 - **README placement.** One "Web access" section replaces the current paragraph, linked from the settings table.
 
 ## Risks / Trade-offs

@@ -20,7 +20,8 @@
   A cited URL counts as "in search results" when any search in the run listed it among its sources. Otherwise it's marked "not seen".
 - **Run-wide, not per step.** `GptRun` keeps a deduplicated list of the run's web actions and the sources consulted, capped at 50 entries; past the cap, the report says how many were left out. The `[web]` lines in each step's transcript text stay as they are.
 - **The GPT rule** goes in the instructions only when web access is on: "Say you opened a page only if you opened it. For a fact you saw only in search results, say so."
-- **Pricing** counts `search` actions only. A search with several `queries` is still one action, as OpenAI's guide describes it.
+- **Pricing** uses OpenAI's own count, `tool_usage.web_search.num_requests`, and otherwise counts `search` actions.
+- **Sources on reads.** In background mode the create returns before any search runs, so `include` on the create alone returns nothing. Every `GET /responses/{id}` also carries `include[]=web_search_call.action.sources`. A response without web actions reads the same with it.
 
 ## Risks / Trade-offs
 

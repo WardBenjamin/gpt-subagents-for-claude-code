@@ -10,9 +10,9 @@ A live check on 2026-10-22 (`gpt:sol`, web on) returned a correct, cited answer,
 ## What Changes
 
 - **Web activity in every report.** When a run used the web, the report Claude receives ends with a "Web activity" list, built by the plugin from OpenAI's record rather than from GPT's text. The list covers every search and every page opened or searched across the whole run. It also lists cited pages that GPT didn't open, each marked as seen in search results or not.
-- **Search sources recorded.** The bridge asks OpenAI for `web_search_call.action.sources` and returns the URLs each search consulted. That's how a cited page can be marked as found in search results.
+- **Search sources recorded.** The bridge asks OpenAI for `web_search_call.action.sources` on the create and on every read of the stored response. A background response returns sources only when the read asks for them. The bridge returns the URLs each search consulted, and the URLs GPT's text cites. That's how a cited page can be marked as found in search results.
 - **A rule for GPT.** With web access on, GPT is told to say "opened" only for pages it opened, and to label facts it took from search results.
-- **Searches priced, not page visits.** `costUsd` adds $0.01 per `search` action only.
+- **Searches priced, not page visits.** `costUsd` adds $0.01 per search, as OpenAI counts them in `tool_usage.web_search.num_requests`, falling back to one per `search` action. Recorded responses confirm it: 0 requests for a turn that only opened a page, and 1 for a search plus two page actions.
 
 **Out of scope:**
 - New web modes, domain filters, and naming the tools for Claude (`add-gpt-web-modes`).
