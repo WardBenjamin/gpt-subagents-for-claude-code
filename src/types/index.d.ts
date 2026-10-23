@@ -19,13 +19,18 @@ export type GptRun = {
   web?: GptRunWeb
 }
 
-/** A run's web activity: each action once, the URLs its searches listed, and the URLs GPT cited. */
+/** A run's web activity: each action once, the URLs its searches listed, the pages read, and the URLs GPT cited. */
 export type GptRunWeb = {
-  actions: Array<{ type: string; query?: string; url?: string }>
+  /** `results`: how many results a search listed; `pages`: what a page action returned (one action can read many). */
+  actions: Array<{ type: string; query?: string; url?: string; results?: number; pages?: string[] }>
   /** Actions past the cap, counted but not kept. */
   more: number
   sources: string[]
   cited: string[]
+  /** Every page any action returned, each once. */
+  pages?: string[]
+  /** What else the web tool said, such as a budget refusal. */
+  notices?: string[]
 }
 
 /** One GPT run of this session: its type name (`sol`, `astra`, `luna`) and the Agent call's description. */

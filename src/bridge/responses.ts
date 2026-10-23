@@ -12,8 +12,11 @@ export type Ctx = {
 
 export type Call = { call_id: string; name: string; args: unknown; argsError?: string }
 export type Usage = { input: number; cached: number; cacheWrite?: number; output: number }
-/** One web action at OpenAI: `query` is a search's query or a find-in-page pattern; `sources` are the URLs a search consulted. */
-export type WebAction = { type: string; query?: string; url?: string; sources?: string[] }
+/**
+ * One web action at OpenAI: `query` is a search's query or a find-in-page pattern; `sources` are the URLs a search
+ * consulted; `pages` are the pages a page action returned, which can be many for one action.
+ */
+export type WebAction = { type: string; query?: string; url?: string; sources?: string[]; pages?: string[] }
 export type Turn = {
   id: string
   status: 'in_progress' | 'completed' | 'failed' | 'cancelled' | 'incomplete'
@@ -22,6 +25,8 @@ export type Turn = {
   webActions?: WebAction[]
   /** The URLs GPT's text cites (`url_citation`), each once. */
   citations?: string[]
+  /** What else the web tool returned (a refusal, say) or a web action that didn't complete, 200 characters each. */
+  notices?: string[]
   usage?: Usage
   costUsd?: number | null
   reason?: string
@@ -56,7 +61,18 @@ const PRICES: Record<string, { input: number; cached: number; cacheWrite: number
 const LONG_PROMPT = 272_000
 // A stored response's search sources come back only when asked for, on the create and on every read.
 const SOURCES = 'web_search_call.action.sources'
-const read = (id: string) => `/responses/${encodeURIComponent(id)}?include%5B%5D=${SOURCES}`
+// What each web action returned, page text included: asked for once, of a finished turn, for its page URLs.
+const RESULTS = 'web_search_call.results'
+const read = (id: string, results = false) =>
+  `/responses/${encodeURIComponent(id)}?include%5B%5D=${SOURCES}${results ? `&include%5B%5D=${RESULTS}` : ''}`
+
+/** A finished response with web actions, read again with their results; any other response as it is. */
+async function withResults(ctx: Ctx, r: any): Promise<any> {
+  if (!TERMINAL.has(r.status) || !(r.output ?? []).some((o: any) => o.type === 'web_search_call')) return r
+  return request(ctx, 'GET', read(r.id, true), undefined, now(ctx) + 30_000)
+}
+
+const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 200)
 const WEB_SEARCH_USD = 10 / 1000 // per search action; opening or searching a page costs only its tokens (OpenAI, 2026-10-22)
 
 const now = (ctx: Ctx) => (ctx.now ?? Date.now)()
@@ -116,12 +132,24 @@ export function toTurn(r: any): Turn {
   for (const a of parts.flatMap(c => c.annotations ?? [])) if (a.type === 'url_citation' && a.url) cites.set(a.url, a.title || a.url)
   const body = parts.map(c => c.text).join('')
   const text = cites.size ? `${body}\n\nSources:\n${[...cites].map(([url, title]) => `- [${title}](${url})`).join('\n')}` : body
+  const notices: string[] = []
   const webActions: WebAction[] = output
     .filter(o => o.type === 'web_search_call')
     .map(o => {
       const a = o.action ?? {}
-      const sources: string[] = (a.sources ?? []).map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean)
-      return { type: a.type ?? 'search', query: a.query ?? a.queries?.[0] ?? a.pattern, url: a.url, ...(sources.length && { sources }) }
+      const type: string = a.type ?? 'search'
+      const results: any[] = Array.isArray(o.results) ? o.results : []
+      // A page result is a text_result with its url; the page text in it is never passed on.
+      const isPage = (x: any) => x?.type === 'text_result' && typeof x.url === 'string'
+      const urls = [...new Set(results.filter(isPage).map(x => x.url as string))]
+      for (const x of results.filter(x => !isPage(x))) notices.push(oneLine(String(x?.text ?? x?.message ?? x?.snippet ?? JSON.stringify(x))))
+      if (o.status && o.status !== 'completed') notices.push(`${type.replace(/_/g, ' ')} ${o.status}`)
+      let sources: string[] = (a.sources ?? []).map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean)
+      if (type === 'search' && !sources.length) sources = urls
+      return {
+        type, query: a.query ?? a.queries?.[0] ?? a.pattern, url: a.url, ...(sources.length && { sources }),
+        ...(type !== 'search' && urls.length && { pages: urls }),
+      }
     })
   // OpenAI's own count of billed searches; else one per search action (page actions aren't billed).
   const searches = r.tool_usage?.web_search?.num_requests ?? webActions.filter(a => a.type === 'search').length
@@ -143,6 +171,7 @@ export function toTurn(r: any): Turn {
   const reason = r.status === 'incomplete' ? r.incomplete_details?.reason : r.status === 'failed' ? r.error?.message : undefined
   return {
     id: r.id, status: r.status, text, calls, ...(webActions.length && { webActions }), ...(cites.size && { citations: [...cites.keys()] }),
+    ...(notices.length && { notices }),
     usage, costUsd: costUsd(r.model ?? '', usage, searches), ...(reason && { reason }),
   }
 }
@@ -155,7 +184,7 @@ export async function waitTurn(ctx: Ctx, id: string, waitMs: number): Promise<Tu
     if (ctx.signal?.aborted) return cancel()
     let turn: Turn
     try {
-      turn = toTurn(await request(ctx, 'GET', read(id), undefined, deadline))
+      turn = toTurn(await withResults(ctx, await request(ctx, 'GET', read(id), undefined, deadline)))
     } catch (e) {
       if (ctx.signal?.aborted) return cancel()
       if ((e as Error)?.name === 'TimeoutError') return { id, status: 'in_progress' } // the deadline cut the poll short
@@ -170,7 +199,7 @@ export async function waitTurn(ctx: Ctx, id: string, waitMs: number): Promise<Tu
 
 /** A stored response as a turn, read once. */
 export async function getTurn(ctx: Ctx, id: string): Promise<Turn> {
-  return toTurn(await request(ctx, 'GET', read(id), undefined, now(ctx) + 30_000))
+  return toTurn(await withResults(ctx, await request(ctx, 'GET', read(id), undefined, now(ctx) + 30_000)))
 }
 
 /** Creates a background response, then waits on it for up to `waitMs` in total. */
@@ -193,7 +222,7 @@ export async function startTurn(ctx: Ctx, a: TurnArgs, waitMs: number): Promise<
     if (ctx.signal?.aborted || (e instanceof OpenAIError && e.status >= 400 && e.status < 500)) throw e
     throw new Error(`${(e as Error).message} (not retried: OpenAI may have started the response)`)
   })
-  const turn = toTurn(r)
+  const turn = toTurn(await withResults(ctx, r))
   const left = waitMs - (now(ctx) - t0)
   if (turn.status !== 'in_progress' || (left <= 0 && !ctx.signal?.aborted)) return turn
   // A failed first poll must not lose the id: report in_progress, and the next wait polls again.

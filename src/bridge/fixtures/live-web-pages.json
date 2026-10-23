@@ -1,0 +1,774 @@
+{
+ "id": "resp_062a849e7290aeb1006ada7d00825887d2a553119abbe5e627",
+ "object": "response",
+ "created_at": 1792703744,
+ "status": "completed",
+ "access_programs": null,
+ "background": true,
+ "billing": {
+  "payer": "developer"
+ },
+ "completed_at": 1792703791,
+ "error": null,
+ "frequency_penalty": 0.0,
+ "incomplete_details": null,
+ "max_output_tokens": null,
+ "max_tool_calls": null,
+ "model": "gpt-6.1-sol",
+ "moderation": null,
+ "output": [
+  {
+   "id": "ws_062a849e7290aeb1006ada7d03b62487d2a3746dad79e1c009",
+   "type": "web_search_call",
+   "status": "completed",
+   "action": {
+    "type": "open_page",
+    "url": "https://nodejs.org/en/blog/release/v22.7.0"
+   },
+   "results": [
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view0\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.0.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.0.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.0.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view1\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.1.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.1.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.1.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view2\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.2.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.2.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.2.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view3\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.3.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.3.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.3.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view4\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.4.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.4.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.4.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view5\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.5.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.5.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.5.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view6\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.6.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.6.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.6.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn0view7\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.7.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.7.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.7.0"
+    }
+   ]
+  },
+  {
+   "id": "ws_062a849e7290aeb1006ada7d07419487d2827a65dea4112c66",
+   "type": "web_search_call",
+   "status": "completed",
+   "action": {
+    "type": "open_page",
+    "url": "https://nodejs.org/en/blog/release/v22.15.0"
+   },
+   "results": [
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view0\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.8.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.8.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.8.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view1\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.9.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.9.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.9.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view2\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.10.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.10.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v22.10.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view3\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.11.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.11.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.11.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view4\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.12.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.12.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.12.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view5\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.13.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.13.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.13.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view6\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.14.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.14.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.14.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn1view7\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.15.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.15.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.15.0"
+    }
+   ]
+  },
+  {
+   "id": "ws_062a849e7290aeb1006ada7d0c132c87d298145bc6b9420b44",
+   "type": "web_search_call",
+   "status": "completed",
+   "action": {
+    "type": "open_page",
+    "url": "https://nodejs.org/en/blog/release/v24.1.0"
+   },
+   "results": [
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view0\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.16.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.16.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.16.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view1\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.17.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.17.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.17.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view2\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.18.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.18.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.18.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view3\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.19.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.19.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.19.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view4\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.20.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.20.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.20.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view5\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v22.21.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 22.21.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v22.21.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view6\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.0.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.0.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.0.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn2view7\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.1.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.1.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.1.0"
+    }
+   ]
+  },
+  {
+   "id": "ws_062a849e7290aeb1006ada7d0fbfb487d2bdacae8a6ca4dd08",
+   "type": "web_search_call",
+   "status": "completed",
+   "action": {
+    "type": "open_page",
+    "url": "https://nodejs.org/en/blog/release/v24.11.0"
+   },
+   "results": [
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view0\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.2.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.2.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.2.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view1\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.3.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.3.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.3.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view2\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.4.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.4.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.4.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view3\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.5.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.5.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.5.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view4\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.6.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.6.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.6.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view5\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.7.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.7.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.7.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view6\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.8.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.8.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.8.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view7\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.9.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.9.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.9.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view8\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.10.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.10.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v24.10.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn3view9\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v24.11.0\",\"lineno\":null});  [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 24.11.0 (LTS)",
+     "url": "https://nodejs.org/en/blog/release/v24.11.0"
+    }
+   ]
+  },
+  {
+   "id": "ws_062a849e7290aeb1006ada7d14602c87d28bc9d7058db16c5e",
+   "type": "web_search_call",
+   "status": "completed",
+   "action": {
+    "type": "open_page",
+    "url": "https://nodejs.org/en/blog/release/v26.12.0"
+   },
+   "results": [
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view0\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.0.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.0.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.0.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view1\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.1.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.1.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.1.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view2\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.2.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.2.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.2.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view3\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.3.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.3.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.3.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view4\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.4.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.4.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.4.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view5\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.5.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.5.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.5.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view6\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.6.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.6.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.6.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view7\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.7.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.7.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.7.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view8\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.8.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.8.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.8.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view9\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.9.0\",\"lineno\":null}); T [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.9.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.9.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view10\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.10.0\",\"lineno\":null}); [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.10.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.10.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view11\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.11.0\",\"lineno\":null}); [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.11.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.11.0"
+    },
+    {
+     "type": "text_result",
+     "snippet": "\ue200cite\ue202turn4view12\ue201 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({\"ref_id\":\"https://nodejs.org/en/blog/release/v26.12.0\",\"lineno\":null}); [trimmed for the fixture]",
+     "title": "Node.js \u2014 Node.js 26.12.0 (Current)",
+     "url": "https://nodejs.org/en/blog/release/v26.12.0"
+    }
+   ]
+  },
+  {
+   "id": "msg_062a849e7290aeb1006ada7d1aa04487d292679ca8d17c8b5f",
+   "type": "message",
+   "status": "completed",
+   "content": [
+    {
+     "type": "output_text",
+     "annotations": [
+      {
+       "type": "url_citation",
+       "end_index": 229,
+       "start_index": 171,
+       "title": "Node.js \u2014 Node.js 22.0.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.0.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 367,
+       "start_index": 309,
+       "title": "Node.js \u2014 Node.js 22.1.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.1.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 538,
+       "start_index": 480,
+       "title": "Node.js \u2014 Node.js 22.2.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.2.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 651,
+       "start_index": 593,
+       "title": "Node.js \u2014 Node.js 22.3.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.3.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 765,
+       "start_index": 707,
+       "title": "Node.js \u2014 Node.js 22.4.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.4.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 884,
+       "start_index": 826,
+       "title": "Node.js \u2014 Node.js 22.5.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.5.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 1038,
+       "start_index": 980,
+       "title": "Node.js \u2014 Node.js 22.6.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.6.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 1205,
+       "start_index": 1147,
+       "title": "Node.js \u2014 Node.js 22.7.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.7.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 1372,
+       "start_index": 1314,
+       "title": "Node.js \u2014 Node.js 22.8.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.8.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 1521,
+       "start_index": 1463,
+       "title": "Node.js \u2014 Node.js 22.9.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.9.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 1648,
+       "start_index": 1589,
+       "title": "Node.js \u2014 Node.js 22.10.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v22.10.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 1817,
+       "start_index": 1758,
+       "title": "Node.js \u2014 Node.js 22.11.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.11.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 1929,
+       "start_index": 1870,
+       "title": "Node.js \u2014 Node.js 22.12.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.12.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2039,
+       "start_index": 1980,
+       "title": "Node.js \u2014 Node.js 22.13.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.13.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2156,
+       "start_index": 2097,
+       "title": "Node.js \u2014 Node.js 22.14.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.14.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2285,
+       "start_index": 2226,
+       "title": "Node.js \u2014 Node.js 22.15.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.15.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2394,
+       "start_index": 2335,
+       "title": "Node.js \u2014 Node.js 22.16.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.16.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2530,
+       "start_index": 2471,
+       "title": "Node.js \u2014 Node.js 22.17.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.17.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2653,
+       "start_index": 2594,
+       "title": "Node.js \u2014 Node.js 22.18.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.18.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2760,
+       "start_index": 2701,
+       "title": "Node.js \u2014 Node.js 22.19.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.19.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2871,
+       "start_index": 2812,
+       "title": "Node.js \u2014 Node.js 22.20.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.20.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 2973,
+       "start_index": 2914,
+       "title": "Node.js \u2014 Node.js 22.21.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v22.21.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3068,
+       "start_index": 3010,
+       "title": "Node.js \u2014 Node.js 24.0.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.0.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3191,
+       "start_index": 3133,
+       "title": "Node.js \u2014 Node.js 24.1.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.1.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3309,
+       "start_index": 3251,
+       "title": "Node.js \u2014 Node.js 24.2.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.2.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3433,
+       "start_index": 3375,
+       "title": "Node.js \u2014 Node.js 24.3.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.3.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3575,
+       "start_index": 3517,
+       "title": "Node.js \u2014 Node.js 24.4.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.4.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3685,
+       "start_index": 3627,
+       "title": "Node.js \u2014 Node.js 24.5.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.5.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3790,
+       "start_index": 3732,
+       "title": "Node.js \u2014 Node.js 24.6.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.6.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 3958,
+       "start_index": 3900,
+       "title": "Node.js \u2014 Node.js 24.7.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.7.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 4085,
+       "start_index": 4027,
+       "title": "Node.js \u2014 Node.js 24.8.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.8.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 4228,
+       "start_index": 4170,
+       "title": "Node.js \u2014 Node.js 24.9.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.9.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 4358,
+       "start_index": 4299,
+       "title": "Node.js \u2014 Node.js 24.10.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v24.10.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 4531,
+       "start_index": 4472,
+       "title": "Node.js \u2014 Node.js 24.11.0 (LTS)",
+       "url": "https://nodejs.org/en/blog/release/v24.11.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 4643,
+       "start_index": 4585,
+       "title": "Node.js \u2014 Node.js 26.0.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.0.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 4806,
+       "start_index": 4748,
+       "title": "Node.js \u2014 Node.js 26.1.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.1.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 4913,
+       "start_index": 4855,
+       "title": "Node.js \u2014 Node.js 26.2.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.2.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5086,
+       "start_index": 5028,
+       "title": "Node.js \u2014 Node.js 26.3.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.3.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5220,
+       "start_index": 5162,
+       "title": "Node.js \u2014 Node.js 26.4.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.4.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5354,
+       "start_index": 5296,
+       "title": "Node.js \u2014 Node.js 26.5.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.5.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5481,
+       "start_index": 5423,
+       "title": "Node.js \u2014 Node.js 26.6.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.6.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5618,
+       "start_index": 5560,
+       "title": "Node.js \u2014 Node.js 26.7.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.7.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5743,
+       "start_index": 5685,
+       "title": "Node.js \u2014 Node.js 26.8.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.8.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5855,
+       "start_index": 5797,
+       "title": "Node.js \u2014 Node.js 26.9.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.9.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 5962,
+       "start_index": 5903,
+       "title": "Node.js \u2014 Node.js 26.10.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.10.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 6078,
+       "start_index": 6019,
+       "title": "Node.js \u2014 Node.js 26.11.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.11.0"
+      },
+      {
+       "type": "url_citation",
+       "end_index": 6222,
+       "start_index": 6163,
+       "title": "Node.js \u2014 Node.js 26.12.0 (Current)",
+       "url": "https://nodejs.org/en/blog/release/v26.12.0"
+      }
+     ],
+     "logprobs": [],
+     "text": "Opened all 47 pages successfully. Below is the first listed notable change or highlighted change on each page.\n\n- **v22.0.0** \u2014 Dropped support for ESM import assertions. ([nodejs.org](https://nodejs.org/en/blog/release/v22.0.0))\n- **v22.1.0** \u2014 Added `NODE_COMPILE_CACHE` for automatic on-disk code caching. ([nodejs.org](https://nodejs.org/en/blog/release/v22.1.0))\n- **v22.2.0** \u2014 Added `--disable-wasm-trap-handler` to allow WebAssembly execution with limited virtual memory. ([nodejs.org](https://nodejs.org/en/blog/release/v22.2.0))\n- **v22.3.0** \u2014 Made `--run` traverse parent folders. ([nodejs.org](https://nodejs.org/en/blog/release/v22.3.0))\n- **v22.4.0** \u2014 Added an experimental Web Storage API. ([nodejs.org](https://nodejs.org/en/blog/release/v22.4.0))\n- **v22.5.0** \u2014 Exposed WebSockets through the HTTP module. ([nodejs.org](https://nodejs.org/en/blog/release/v22.5.0))\n- **v22.6.0** \u2014 Added experimental TypeScript type stripping via `--experimental-strip-types`. ([nodejs.org](https://nodejs.org/en/blog/release/v22.6.0))\n- **v22.7.0** \u2014 Added `--experimental-transform-types` to transform TypeScript-only syntax into JavaScript. ([nodejs.org](https://nodejs.org/en/blog/release/v22.7.0))\n- **v22.8.0** \u2014 Added `module.enableCompileCache()` to enable on-disk module code caching programmatically. ([nodejs.org](https://nodejs.org/en/blog/release/v22.8.0))\n- **v22.9.0** \u2014 Added `util.getCallSite()` to retrieve the current execution stack trace. ([nodejs.org](https://nodejs.org/en/blog/release/v22.9.0))\n- **v22.10.0** \u2014 Introduced the `\"module-sync\"` exports condition. ([nodejs.org](https://nodejs.org/en/blog/release/v22.10.0))\n- **v22.11.0** \u2014 Transitioned Node.js 22.x to LTS under the codename \u201cJod\u201d; otherwise only metadata changed. ([nodejs.org](https://nodejs.org/en/blog/release/v22.11.0))\n- **v22.12.0** \u2014 Enabled `require(esm)` by default. ([nodejs.org](https://nodejs.org/en/blog/release/v22.12.0))\n- **v22.13.0** \u2014 Stabilized the Permission Model. ([nodejs.org](https://nodejs.org/en/blog/release/v22.13.0))\n- **v22.14.0** \u2014 Updated root certificates to NSS 3.107. ([nodejs.org](https://nodejs.org/en/blog/release/v22.14.0))\n- **v22.15.0** \u2014 Implemented partial error comparison in assertions. ([nodejs.org](https://nodejs.org/en/blog/release/v22.15.0))\n- **v22.16.0** \u2014 Updated timezone data to 2025b. ([nodejs.org](https://nodejs.org/en/blog/release/v22.16.0))\n- **v22.17.0** \u2014 Deprecated constructing `node:http` classes without `new`. ([nodejs.org](https://nodejs.org/en/blog/release/v22.17.0))\n- **v22.18.0** \u2014 Enabled TypeScript type stripping by default. ([nodejs.org](https://nodejs.org/en/blog/release/v22.18.0))\n- **v22.19.0** \u2014 Added `NODE_USE_SYSTEM_CA=1`. ([nodejs.org](https://nodejs.org/en/blog/release/v22.19.0))\n- **v22.20.0** \u2014 Updated bundled OpenSSL to 3.5.2. ([nodejs.org](https://nodejs.org/en/blog/release/v22.20.0))\n- **v22.21.0** \u2014 Added `--use-env-proxy`. ([nodejs.org](https://nodejs.org/en/blog/release/v22.21.0))\n- **v24.0.0** \u2014 Updated V8 to 13.6. ([nodejs.org](https://nodejs.org/en/blog/release/v24.0.0))\n- **v24.1.0** \u2014 Added JonasBa (Jonas Badalic) to collaborators. ([nodejs.org](https://nodejs.org/en/blog/release/v24.1.0))\n- **v24.2.0** \u2014 Removed HTTP/2 priority signaling support. ([nodejs.org](https://nodejs.org/en/blog/release/v24.2.0))\n- **v24.3.0** \u2014 Added islandryu (Shima Ryuhei) to collaborators. ([nodejs.org](https://nodejs.org/en/blog/release/v24.3.0))\n- **v24.4.0** \u2014 Added `outputLength` support to `crypto.hash()` for XOF functions. ([nodejs.org](https://nodejs.org/en/blog/release/v24.4.0))\n- **v24.5.0** \u2014 Upgraded bundled OpenSSL to 3.5.1. ([nodejs.org](https://nodejs.org/en/blog/release/v24.5.0))\n- **v24.6.0** \u2014 Added `NODE_USE_SYSTEM_CA=1`. ([nodejs.org](https://nodejs.org/en/blog/release/v24.6.0))\n- **v24.7.0** \u2014 Highlighted post-quantum cryptography support in `node:crypto`, including ML-KEM and ML-DSA. ([nodejs.org](https://nodejs.org/en/blog/release/v24.7.0))\n- **v24.8.0** \u2014 Added HTTP/2 network inspection in Chrome DevTools. ([nodejs.org](https://nodejs.org/en/blog/release/v24.8.0))\n- **v24.9.0** \u2014 Added `shouldUpgradeCallback` so HTTP servers can control upgrades. ([nodejs.org](https://nodejs.org/en/blog/release/v24.9.0))\n- **v24.10.0** \u2014 Allowed per-stream `inspectOptions` for the console. ([nodejs.org](https://nodejs.org/en/blog/release/v24.10.0))\n- **v24.11.0** \u2014 Transitioned Node.js 24.x to LTS under the codename \u201cKrypton\u201d; otherwise only metadata changed. ([nodejs.org](https://nodejs.org/en/blog/release/v24.11.0))\n- **v26.0.0** \u2014 Enabled the Temporal API by default. ([nodejs.org](https://nodejs.org/en/blog/release/v26.0.0))\n- **v26.1.0** \u2014 Added experimental `node:ffi` for loading dynamic libraries and calling native symbols. ([nodejs.org](https://nodejs.org/en/blog/release/v26.1.0))\n- **v26.2.0** \u2014 Marked `stream.compose` stable. ([nodejs.org](https://nodejs.org/en/blog/release/v26.2.0))\n- **v26.3.0** \u2014 Warned that macOS universal binaries might not remain available throughout Node.js 26\u2019s lifetime. ([nodejs.org](https://nodejs.org/en/blog/release/v26.3.0))\n- **v26.4.0** \u2014 Updated `blockList` stability status to release candidate. ([nodejs.org](https://nodejs.org/en/blog/release/v26.4.0))\n- **v26.5.0** \u2014 Announced a new release-signing key for Stewart X Addison. ([nodejs.org](https://nodejs.org/en/blog/release/v26.5.0))\n- **v26.6.0** \u2014 Added MikeMcC399 (Mike McCready) as a collaborator. ([nodejs.org](https://nodejs.org/en/blog/release/v26.6.0))\n- **v26.7.0** \u2014 Added support for loading private keys through STORE loaders. ([nodejs.org](https://nodejs.org/en/blog/release/v26.7.0))\n- **v26.8.0** \u2014 Added `--analyze` mode to benchmark `compare.js`. ([nodejs.org](https://nodejs.org/en/blog/release/v26.8.0))\n- **v26.9.0** \u2014 Added a generic MAC API to `crypto`. ([nodejs.org](https://nodejs.org/en/blog/release/v26.9.0))\n- **v26.10.0** \u2014 Added `crypto.parsePKCS12()`. ([nodejs.org](https://nodejs.org/en/blog/release/v26.10.0))\n- **v26.11.0** \u2014 Added `isLatin1` to the buffer module. ([nodejs.org](https://nodejs.org/en/blog/release/v26.11.0))\n- **v26.12.0** \u2014 Added throwing behavior when WebAssembly or RX support is missing. ([nodejs.org](https://nodejs.org/en/blog/release/v26.12.0))"
+    }
+   ],
+   "phase": "final_answer",
+   "role": "assistant"
+  }
+ ],
+ "parallel_tool_calls": true,
+ "presence_penalty": 0.0,
+ "previous_response_id": null,
+ "prompt_cache_retention": "24h",
+ "reasoning": {
+  "context": "all_turns",
+  "effort": "low",
+  "mode": "standard",
+  "summary": null
+ },
+ "service_tier": "default",
+ "store": true,
+ "temperature": 1.0,
+ "text": {
+  "format": {
+   "type": "text"
+  },
+  "verbosity": "medium"
+ },
+ "tool_choice": "auto",
+ "tool_usage": {
+  "image_gen": {
+   "input_tokens": 0,
+   "input_tokens_details": {
+    "image_tokens": 0,
+    "text_tokens": 0
+   },
+   "output_tokens": 0,
+   "output_tokens_details": {
+    "image_tokens": 0,
+    "text_tokens": 0
+   },
+   "total_tokens": 0
+  },
+  "web_search": {
+   "num_requests": 0
+  }
+ },
+ "tools": [
+  {
+   "type": "web_search",
+   "return_token_budget": "default",
+   "search_content_types": [
+    "text"
+   ],
+   "search_context_size": "medium",
+   "user_location": {
+    "type": "approximate",
+    "city": null,
+    "country": "US",
+    "region": null,
+    "timezone": null
+   }
+  }
+ ],
+ "top_logprobs": 0,
+ "top_p": 0.98,
+ "truncation": "disabled",
+ "usage": {
+  "input_tokens": 47430,
+  "input_tokens_details": {
+   "cache_write_tokens": 0,
+   "cached_tokens": 5244
+  },
+  "output_tokens": 2759,
+  "output_tokens_details": {
+   "reasoning_tokens": 988
+  },
+  "total_tokens": 50189
+ },
+ "metadata": {}
+}

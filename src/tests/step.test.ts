@@ -115,6 +115,14 @@ describe('step', () => {
     expect(normUrl('https://a.example/x/?utm_source=openai&v=2#h')).toBe('https://a.example/x/?v=2')
   })
 
+  test('page lines past 100 are cut with a note saying so; a page in several batches is listed once', async () => {
+    const batch = (from: number) => ({ type: 'open_page', url: 'u', pages: Array.from({ length: 30 }, (_, i) => `https://p.example/${from + i}`) })
+    const web = addWeb(undefined, { id: 'r', status: 'completed', webActions: [batch(0), batch(20), batch(40), batch(60), batch(80)] })
+    const lines = webActivity(web).split('\n')
+    expect(lines.filter(l => l.startsWith('  - ')).length).toBe(95)
+    expect(lines.at(-1)).toBe('- …and 15 more lines of web activity, left out to keep the report short')
+  })
+
   test('the end of a turn is a bare end_turn stop', async () => {
     expect(endTurn().stopReason).toBe('end_turn')
   })

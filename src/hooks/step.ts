@@ -13,8 +13,9 @@ export type BridgeTurn = {
   status: string
   text?: string
   calls?: Array<{ call_id: string; name: string; args: unknown; argsError?: string }>
-  webActions?: Array<{ type: string; query?: string; url?: string; sources?: string[] }>
+  webActions?: Array<{ type: string; query?: string; url?: string; sources?: string[]; pages?: string[] }>
   citations?: string[]
+  notices?: string[]
   usage?: { input: number; cached: number; output: number }
   costUsd?: number | null
   reason?: string
@@ -127,57 +128,86 @@ export function normUrl(url: string): string {
 
 /** The run's web activity with one turn's added: actions once each, plus the sources and citations seen. */
 export function addWeb(web: GptRunWeb | undefined, t: BridgeTurn): GptRunWeb | undefined {
-  if (!t.webActions?.length && !t.citations?.length) return web
-  const next: GptRunWeb = { actions: [...(web?.actions ?? [])], more: web?.more ?? 0, sources: [...(web?.sources ?? [])], cited: [...(web?.cited ?? [])] }
-  const key = (a: { type: string; query?: string; url?: string }) => `${a.type} ${a.query ?? ''} ${a.url ? normUrl(a.url) : ''}`
+  if (!t.webActions?.length && !t.citations?.length && !t.notices?.length) return web
+  const next: GptRunWeb = {
+    actions: [...(web?.actions ?? [])], more: web?.more ?? 0, sources: [...(web?.sources ?? [])], cited: [...(web?.cited ?? [])],
+    pages: [...(web?.pages ?? [])], notices: [...(web?.notices ?? []), ...(t.notices ?? [])].slice(0, 4 * NOTICES),
+  }
+  const key = (a: { type: string; query?: string; url?: string; pages?: readonly string[] }) =>
+    `${a.type} ${a.query ?? ''} ${a.url ? normUrl(a.url) : ''} ${(a.pages ?? []).map(normUrl).join(' ')}`
   const have = new Set(next.actions.map(key))
-  for (const { sources, ...a } of t.webActions ?? []) {
+  for (const { sources, pages, ...rest } of t.webActions ?? []) {
+    const a = { ...rest, ...(rest.type === 'search' && sources?.length && { results: sources.length }), ...(pages?.length && { pages }) }
     if (!have.has(key(a))) {
       have.add(key(a))
       if (next.actions.length < WEB_KEEP) next.actions.push(a)
       else next.more++
     }
     for (const u of sources ?? []) if (!next.sources.includes(normUrl(u))) next.sources.push(normUrl(u))
+    const read = [...(pages ?? []), ...(a.type !== 'search' && a.url ? [a.url] : [])]
+    for (const u of read) if (!next.pages!.includes(normUrl(u))) next.pages!.push(normUrl(u))
   }
   for (const u of t.citations ?? []) if (!next.cited.includes(normUrl(u))) next.cited.push(normUrl(u))
   next.sources = next.sources.slice(-10 * WEB_KEEP)
   next.cited = next.cited.slice(0, 10 * WEB_KEEP)
+  next.pages = next.pages!.slice(0, 10 * WEB_KEEP)
   return next
 }
 
-/** The list that ends a report: what GPT did on the web, from OpenAI's record, then what it cited without reading. */
-export function webActivity(web: GptRunWeb | undefined): string {
-  if (!web || (!web.actions.length && !web.cited.length)) return ''
-  const read = new Set(web.actions.filter(a => a.url && a.type !== 'search').map(a => normUrl(a.url!)))
-  const lines = web.actions.map(a => `- ${webLine(a)}`)
+const NOTICES = 5 // web-tool notices shown in a report
+const WEB_LINES = 100 // action and page lines shown in a report; a page line is a URL, so cheap
+const BUDGET_HINT = '- To let GPT read more pages in a run, run /gpt settings webBudget unlimited (it can be slower and cost more).'
+
+/**
+ * The list that ends a report, from OpenAI's record: each search with its result count, each page action with
+ * the pages it returned (each page once), then cited pages no action returned, then what the web tool said.
+ */
+export function webActivity(web: GptRunWeb | undefined, budget = 'default'): string {
+  const notices = web?.notices ?? []
+  if (!web || (!web.actions.length && !web.cited.length && !notices.length)) return ''
+  const listed = new Set<string>()
+  const lines: string[] = []
+  for (const a of web.actions) {
+    const pages = (a.pages ?? []).filter(u => !listed.has(normUrl(u)))
+    pages.forEach(u => listed.add(normUrl(u)))
+    if ((a.pages?.length ?? 0) > 1) lines.push(`- ${webLine(a, a.pages!.length)}:`, ...pages.map(u => `  - ${u}`))
+    else lines.push(`- ${webLine(a)}`)
+  }
+  if (lines.length > WEB_LINES) lines.splice(WEB_LINES, Infinity, `- …and ${lines.length - WEB_LINES} more lines of web activity, left out to keep the report short`)
   if (web.more) lines.push(`- …and ${web.more} more web actions`)
+  const read = new Set(web.pages ?? [])
+  for (const a of web.actions) if (a.url && a.type !== 'search') read.add(normUrl(a.url))
   for (const u of web.cited) if (!read.has(u)) lines.push(`- cited, not opened: ${u} (${web.sources.includes(u) ? 'in search results' : 'not seen'})`)
+  for (const n of notices.slice(0, NOTICES)) lines.push(`- the web tool said: "${n}"`)
+  if (notices.length > NOTICES) lines.push(`- …and ${notices.length - NOTICES} more notices`)
+  if (notices.length && budget === 'default') lines.push(BUDGET_HINT)
   return `Web activity (at OpenAI):\n${lines.join('\n')}`
 }
 
-const webLine = (a: { type: string; query?: string; url?: string }) =>
-  a.type === 'search' ? `searched "${a.query ?? ''}"`
-    : a.type === 'open_page' ? `opened ${a.url ?? ''}`
-    : a.type === 'find_in_page' ? `searched in ${a.url ?? ''} for "${a.query ?? ''}"`
+/** One web action in words; `pages` when a page action returned more than one. */
+const webLine = (a: { type: string; query?: string; url?: string; results?: number }, pages?: number) =>
+  a.type === 'search' ? `searched "${a.query ?? ''}"${a.results ? ` (${a.results} results)` : ''}`
+    : a.type === 'open_page' ? (pages ? `opened ${pages} pages` : `opened ${a.url ?? ''}`)
+    : a.type === 'find_in_page' ? (pages ? `searched ${pages} pages for "${a.query ?? ''}"` : `searched in ${a.url ?? ''} for "${a.query ?? ''}"`)
     : `${a.type.replace(/_/g, ' ')}${a.url ? ` ${a.url}` : ''}${a.query ? ` "${a.query}"` : ''}`
 
 /** One transcript line per web action GPT took at OpenAI, so its searches and pages stay visible. */
 export function webLines(t: BridgeTurn): string {
-  return (t.webActions ?? []).map(a => `[web] ${webLine(a)}`).join('\n')
+  return (t.webActions ?? []).map(a => `[web] ${(a.pages?.length ?? 0) > 1 ? `${webLine(a, a.pages!.length)}, ${a.pages![0]} first` : webLine(a)}`).join('\n')
 }
 
 /** `message` with the run's web-activity list after it, when the run used the web. */
-export const withWeb = (message: string, web: GptRunWeb | undefined) => [message, webActivity(web)].filter(Boolean).join('\n\n')
+export const withWeb = (message: string, web: GptRunWeb | undefined, budget?: string) => [message, webActivity(web, budget)].filter(Boolean).join('\n\n')
 
 /** A finished GPT turn as a step: its text and tool calls, or its answer as the report, ending with `runWeb`'s list. */
-export function stepFromTurn(t: BridgeTurn, viaHandback: boolean, runWeb?: GptRunWeb): StepOut {
+export function stepFromTurn(t: BridgeTurn, viaHandback: boolean, runWeb?: GptRunWeb, budget?: string): StepOut {
   const web = webLines(t)
   if (t.status !== 'completed') {
     const why = `GPT run ended: ${t.status}${t.reason ? ` (${t.reason})` : ''}.`
-    return report(withWeb(t.text ? `${why}\n\n${t.text}` : why, runWeb), t.id, viaHandback, web)
+    return report(withWeb(t.text ? `${why}\n\n${t.text}` : why, runWeb, budget), t.id, viaHandback, web)
   }
   const calls = t.calls ?? []
-  if (calls.length === 0) return report(withWeb(t.text || '(GPT finished without a message.)', runWeb), t.id, viaHandback, web)
+  if (calls.length === 0) return report(withWeb(t.text || '(GPT finished without a message.)', runWeb, budget), t.id, viaHandback, web)
   const text = [web, t.text ?? ''].filter(Boolean).join('\n\n')
 
   const chunks: Chunk[] = text ? [{ kind: 'text', index: 0, text }] : []

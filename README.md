@@ -2,7 +2,7 @@
 
 `gpt` is a Claude Code plugin that runs OpenAI's GPT models as native Claude Code subagents. Claude dispatches `gpt:sol`, `gpt:astra` or `gpt:luna` with its ordinary `Agent` tool. What runs is a real subagent: it has its own transcript and task row, can run in the background, hands back a report, and takes `SendMessage` follow-ups. GPT answers every one of its model steps, so those steps use no Anthropic tokens. GPT's tool calls (`Read`, `Edit`, `Write`, `Bash`) run inside Claude Code under the session's own permission rules.
 
-This is an independent project. It isn't made or endorsed by Anthropic or OpenAI. **Status: 0.4.0, a preview.**
+This is an independent project. It isn't made or endorsed by Anthropic or OpenAI. **Status: 0.5.0, a preview.**
 
 ## How it works
 
@@ -141,6 +141,7 @@ Desktop's own settings screens don't show plugin options for a marketplace you a
 | GPT cost cap (USD) | 5 | A run stops once its estimated OpenAI cost reaches this. An astra run reaches the default sooner. |
 | GPT web access | off | Gives GPT OpenAI's hosted web search. See [Web access](#web-access). |
 | GPT web: cache only | off | With web access on, uses only OpenAI's cached pages. See [Web access](#web-access). |
+| GPT web budget | `default` | How much page content OpenAI's web search may return to GPT in a run: `default` or `unlimited`. See [Web access](#web-access). |
 
 ## Web access
 
@@ -168,7 +169,15 @@ The agent listing changes at the next session start.
 
 **What Claude sees.** With web on, the `gpt:*` types are listed with `WebSearch` and `WebFetch` after `Read`, `Edit`, `Write` and `Bash`, and their description names the mode. So Claude prompts them as it would any agent with web tools: "search for…", "read <url> and…". GPT uses the web only when the task needs it. Writing "no web" in the prompt keeps it off for that dispatch. Claude Code's own `WebSearch` and `WebFetch` never run for a GPT agent: the plugin refuses them.
 
-**What gets reported.** Each web action appears in the subagent's transcript as it happens (`[web] searched "…"`, `[web] opened …`). Pages GPT cites are listed under `Sources:`. The report Claude receives ends with a **Web activity** list, built by the plugin from OpenAI's record rather than from GPT's text. It covers every search and every page opened or searched in the run, then any page GPT cited without opening, marked as found in search results or not seen. GPT is also told to say "opened" only for pages it opened.
+**What gets reported.** Each web action appears in the subagent's transcript as it happens (`[web] searched "…"`, `[web] opened …`). Pages GPT cites are listed under `Sources:`. The report Claude receives ends with a **Web activity** list, built by the plugin from OpenAI's record rather than from GPT's text. It shows:
+- each search, with how many results it listed;
+- each page action with the pages it returned. One action can open a batch of pages, such as "opened 13 pages", and each page is listed once in the run;
+- any page GPT cited that no action returned, marked as found in search results or not seen;
+- anything else the web tool said, such as a refusal.
+
+GPT is also told to say "opened" only for pages it opened. Page text never reaches Claude.
+
+**Web budget.** OpenAI caps how much page content its web search returns to GPT in a run. GPT may say the web tool stopped giving it pages, and the list may show what the tool said. If so, `/gpt settings webBudget unlimited` removes the cap (`return_token_budget: "unlimited"`), which can make runs slower and cost more. OpenAI doesn't publish the default cap's size. 47 short release-note pages fit within it.
 
 **Costs.** Each search costs $0.01, as OpenAI counts searches, plus the retrieved content at the model's input rate. Opening or searching a page costs only its tokens. Both appear in `/gpt cost`.
 

@@ -1,6 +1,6 @@
 {
   "name": "gpt",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Run OpenAI GPT models as Claude Code subagents on the session's own tools",
   "author": {
     "name": "Ben Ward",
@@ -60,6 +60,17 @@
       "required": false,
       "default": false,
       "description": "With web access on, use only OpenAI's cached copies of pages (external_web_access: false): nothing is fetched live, so some pages are missing."
+    },
+    "webBudget": {
+      "type": "string",
+      "title": "GPT web budget",
+      "required": false,
+      "default": "default",
+      "options": [
+        "default",
+        "unlimited"
+      ],
+      "description": "How much page content OpenAI's web search may return to GPT in a run. \"unlimited\" lets GPT read more pages, but can be slower and cost more. Applies only while web access is on."
     }
   }
 }
