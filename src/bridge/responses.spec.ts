@@ -223,3 +223,33 @@ test('a create that may have reached OpenAI is reported, never replayed: it has 
     assert.equal(seen.length, 1, name)
   }
 })
+
+test('live fixture (gpt-6.1-sol, 47 pages, 2026-10-22): 5 open_page actions return 8, 8, 8, 10 and 13 pages, without their text', () => {
+  const t = toTurn(fixture('live-web-pages'))
+  assert.deepEqual(t.webActions?.map(a => [a.type, a.pages?.length]), [['open_page', 8], ['open_page', 8], ['open_page', 8], ['open_page', 10], ['open_page', 13]])
+  assert.equal(new Set(t.webActions?.flatMap(a => a.pages ?? [])).size, 47)
+  assert.ok(t.webActions?.[4]?.pages?.includes('https://nodejs.org/en/blog/release/v26.0.0'))
+  assert.equal(t.notices, undefined)
+  assert.ok(!JSON.stringify(t).includes('trimmed for the fixture'))
+})
+
+test('the web tool\'s other results and a web action that didn\'t complete become notices', () => {
+  const t = toTurn({
+    id: 'resp_n', status: 'completed', model: 'gpt-6.1-sol', usage: { input_tokens: 0, output_tokens: 0 },
+    output: [{ type: 'web_search_call', id: 'ws_1', status: 'failed', action: { type: 'open_page', url: 'https://a.example' }, results: [
+      { type: 'text_result', url: 'https://a.example', title: 'A', snippet: 'page text' },
+      { type: 'notice', text: 'Return token budget exhausted:\n no more pages this run.' },
+    ] }],
+  })
+  assert.deepEqual(t.webActions?.[0]?.pages, ['https://a.example'])
+  assert.deepEqual(t.notices, ['Return token budget exhausted: no more pages this run.', 'open page failed'])
+})
+
+test('a finished web turn is read once more with its results; polls of a running one are not', async () => {
+  const done = fixture('live-web-pages')
+  const bare = { ...done, output: done.output.map((o: any) => { const { results, ...rest } = o; return rest }) }
+  const { ctx, seen } = fakeCtx([[200, { id: done.id, status: 'in_progress' }], [200, bare], [200, done]])
+  const t = await waitTurn(ctx, done.id, 45_000)
+  assert.deepEqual(seen.map(s => s.url.includes('web_search_call.results')), [false, false, true])
+  assert.equal(t.webActions?.[0]?.pages?.length, 8)
+})
