@@ -6,7 +6,7 @@ Lets Claude delegate a task to a GPT model with the native Agent tool (`subagent
 ## Requirements
 
 ### Requirement: Offer gpt:sol as an agent type
-The plugin SHALL register the agent type `gpt:sol` at session start, with the tools `Read`, `Edit`, `Write` and `Bash`, and a description saying it runs GPT-6.1 Sol, takes effort `low` to `max`, and whether auto mode lets it edit in this session. That is so when `CLAUDE_CODE_AUTO_MODE_SERVER` is set and is not `1`, `true`, `yes` or `on`, which turns auto mode's server review off for the session.
+The plugin SHALL register the agent type `gpt:sol` at session start, with the tools `Read`, `Edit`, `Write` and `Bash`, plus `WebSearch` and `WebFetch` when web access is on, and a description saying it runs GPT-6.1 Sol, takes effort `low` to `max`, and whether auto mode lets it edit in this session. That is so when `CLAUDE_CODE_AUTO_MODE_SERVER` is set and is not `1`, `true`, `yes` or `on`, which turns auto mode's server review off for the session.
 
 #### Scenario: Listed for Claude
 - **WHEN** a session with the plugin loaded starts
@@ -15,6 +15,10 @@ The plugin SHALL register the agent type `gpt:sol` at session start, with the to
 #### Scenario: Local review named
 - **WHEN** a session starts with `CLAUDE_CODE_AUTO_MODE_SERVER=0`, from the shell or from settings `env`
 - **THEN** the description says auto mode reviews GPT's actions with its local classifier, like Claude's
+
+#### Scenario: Web tools listed
+- **WHEN** a session starts with web access `cached` or `live`
+- **THEN** `gpt:sol` is listed with `WebSearch` and `WebFetch` after its other tools, and its description says both run at OpenAI in that mode
 
 ### Requirement: GPT answers every model step of a gpt subagent
 For each model request of a subagent whose type starts with `gpt:`, the plugin SHALL send the request's new input to GPT and return GPT's response as the step's response, reporting no Anthropic token usage for it. It SHALL never send that request to an Anthropic model. Model requests of the main loop and of other agent types SHALL proceed unchanged.
@@ -115,7 +119,10 @@ The plugin SHALL read these settings from its `userConfig`, each shown in `/conf
 - effort: `inherit` (default) or `low` to `max`;
 - step cap (default 60);
 - cost cap in USD (default 5);
-- web access (default off).
+- web access (default off);
+- web cache-only (default off), which applies only while web access is on.
+
+Web access off is the `off` mode, on is `live`, and on with cache-only is `cached`.
 
 A changed setting SHALL apply from the next GPT step.
 
@@ -123,8 +130,14 @@ A changed setting SHALL apply from the next GPT step.
 - **WHEN** the effort setting is changed to `low` in `/config`
 - **THEN** the next GPT step runs at `low`
 
+#### Scenario: Setting from an earlier version
+- **WHEN** the stored web setting is `true` and cache-only was never set
+- **THEN** the plugin loads and GPT gets web access in `live` mode
+
 ### Requirement: Web access through OpenAI's tooling
 When web access is on, the plugin SHALL give GPT OpenAI's hosted `web_search` tool in each request, run by OpenAI under its own site access and safeguards. It SHALL NOT offer GPT Claude Code's `WebFetch` or `WebSearch`. Each web action GPT takes (a search query, or a page opened or searched) SHALL appear as text in the subagent's transcript at that step.
+
+When a run used the web, the report Claude receives, as a hand-back or as final text, SHALL end with a "Web activity (at OpenAI):" list. The plugin SHALL build that list from OpenAI's record of the run's responses, not from GPT's text. It SHALL hold every search and every page opened or searched in the run, then each cited page GPT didn't open, marked as found in search results or not seen. With web access on, GPT's instructions SHALL tell it to say it opened a page only if it did, and to say so when a fact comes only from search results.
 
 #### Scenario: GPT searches
 - **WHEN** web access is on and GPT searches for "Claude Code mods release notes" before answering
@@ -133,6 +146,10 @@ When web access is on, the plugin SHALL give GPT OpenAI's hosted `web_search` to
 #### Scenario: Web access off
 - **WHEN** web access is off
 - **THEN** GPT's requests carry no `web_search` tool
+
+#### Scenario: Cited but not opened
+- **WHEN** in auto mode GPT searches once, opens one page, and cites that page and a second one that appeared only in the search's sources
+- **THEN** the hand-back message ends with the search, the opened page, and the second page marked "cited, not opened (in search results)"
 
 ### Requirement: Cost ledger
 The plugin SHALL add each GPT step's priced cost to a ledger kept in plugin storage across sessions, grouped by calendar month and model, with run and step counts.
@@ -147,3 +164,14 @@ The plugin SHALL register the slash command `/gpt`. `/gpt status` SHALL list thi
 #### Scenario: Status after a run
 - **WHEN** one `gpt:sol` run finished with 3 steps at $0.02, and the user types `/gpt status`
 - **THEN** the output lists that run as `gpt:sol`, done, 3 steps, $0.02
+
+### Requirement: Web modes
+In `live` mode the plugin SHALL send OpenAI's `web_search` tool with its defaults. In `cached` mode it SHALL send it with `external_web_access: false`, so that OpenAI uses only cached content. In either mode, GPT's instructions SHALL say the web is available and that it should be used only when the task needs it, and never when the task says not to. The plugin SHALL refuse any `WebSearch` or `WebFetch` call from a `gpt:*` agent, so that Claude Code's web tools never run for GPT.
+
+#### Scenario: Cached mode
+- **WHEN** web access is `cached` and GPT takes a step
+- **THEN** the request's `web_search` tool carries `external_web_access: false`
+
+#### Scenario: Claude's web tool from a GPT agent
+- **WHEN** a `gpt:*` agent issues a `WebFetch` call
+- **THEN** the call is refused with a reason saying GPT's web access runs at OpenAI, and no Anthropic request is made
