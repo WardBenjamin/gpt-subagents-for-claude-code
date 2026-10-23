@@ -17,7 +17,7 @@ A user's `gpt:sol` research run stopped after 10–15 web actions. GPT said the 
   - each page action, with its pages, as in "opened 13 pages: …";
   - cited pages that no action returned, marked "in search results" or "not seen", as now.
 
-  Each page is listed once across the run, capped at 50 lines with a count of the rest.
+  Each page is listed once across the run, capped at 100 lines with a count of the rest.
 - **A `webBudget` setting**, `default` or `unlimited`. With `unlimited`, `web_search` carries `return_token_budget: "unlimited"`. `/gpt settings` shows it, since it reads the manifest.
 - **Specs tidied:** the three requirements over the length limit are split. They're the bridge's "Report function calls and usage" and "Price each turn", and the agents' "Web access through OpenAI's tooling".
 
