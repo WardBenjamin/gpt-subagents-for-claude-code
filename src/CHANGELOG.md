@@ -2,6 +2,17 @@
 
 Versions follow [Semantic Versioning](https://semver.org/). Entries come from the repository's Conventional Commits: `feat` under Added, `fix` under Fixed, and breaking changes (`!`) under Changed.
 
+## 0.5.0 – 2026-10-22
+
+### Added
+
+- **A GPT web budget setting** (`webBudget`: `default` or `unlimited`). OpenAI caps how much page content its web search returns to GPT in a run. `unlimited` removes that cap (`return_token_budget: "unlimited"`), which can make runs slower and cost more.
+- **The web tool's notices**, such as a refusal, end the web-activity list. On the default budget, the list also suggests `/gpt settings webBudget unlimited`.
+
+### Fixed
+
+- **The web-activity list counts pages, not actions.** One `open_page` action can return a batch of pages: a 47-page run had 4 or 5 actions. The bridge now reads a finished web turn once more with `web_search_call.results`, and returns each action's page URLs, never the page text. The list shows each batch with its pages, each page listed once per run. A page opened in a batch is no longer marked "cited, not opened". Searches show how many results they listed.
+
 ## 0.4.0 – 2026-10-22
 
 ### Added
