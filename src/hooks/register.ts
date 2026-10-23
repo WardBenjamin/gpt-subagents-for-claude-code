@@ -54,13 +54,19 @@ function settings(options: PluginOptions) {
     maxSteps: num(options.maxSteps, 60),
     maxUsd: num(options.maxUsd, 5),
     web: (options.web !== true ? 'off' : options.webCacheOnly === true ? 'cached' : 'live') as WebMode,
+    webBudget: options.webBudget === 'unlimited' ? 'unlimited' : 'default',
   }
 }
 
 // GPT's web access is OpenAI's hosted web_search, run at OpenAI under its site access and safeguards. It does
 // both of Claude's web tools' jobs (search; open and search pages), so the types list both names.
 const WEB_TOOLS = ['WebSearch', 'WebFetch']
-const webTool = (mode: WebMode) => (mode === 'cached' ? { type: 'web_search', external_web_access: false } : { type: 'web_search' })
+const webTool = (mode: WebMode, budget: string) => ({
+  type: 'web_search',
+  ...(mode === 'cached' && { external_web_access: false }),
+  // How much page content the tool may return in a run; OpenAI documents only `default` and `unlimited`.
+  ...(budget === 'unlimited' && { return_token_budget: 'unlimited' }),
+})
 const WEB_NOTE: Record<WebMode, string> = {
   off: '',
   live: 'Its WebSearch and WebFetch are OpenAI\'s hosted web search, run at OpenAI outside Claude Code\'s permissions: ' +
@@ -239,7 +245,7 @@ export const register: Register = (on, options) => {
     if (sub === 'settings') {
       const spec = await schema($)
       if (name === undefined) {
-        const running = { effort: cfg.effort, maxSteps: cfg.maxSteps, maxUsd: cfg.maxUsd, web: cfg.web !== 'off', webCacheOnly: options.webCacheOnly === true }
+        const running = { effort: cfg.effort, maxSteps: cfg.maxSteps, maxUsd: cfg.maxUsd, web: cfg.web !== 'off', webCacheOnly: options.webCacheOnly === true, webBudget: cfg.webBudget }
         return { text: formatSettings(spec, running, cfg.web) }
       }
       const parsed = parseSetting(spec, name, rest.join(' '))
@@ -306,7 +312,7 @@ export const register: Register = (on, options) => {
         saved = { ...run, report: undefined }
       } else if (run.steps >= cfg.maxSteps || run.costUsd >= cfg.maxUsd) {
         const cap = run.steps >= cfg.maxSteps ? `the ${cfg.maxSteps}-step cap` : `the $${cfg.maxUsd} cost cap`
-        out = report(withWeb(`GPT run stopped: ${cap} was reached.`, run.web), seed, viaHandback)
+        out = report(withWeb(`GPT run stopped: ${cap} was reached.`, run.web, cfg.webBudget), seed, viaHandback)
         saved = { ...run, pending: [], handedBack: true, report: out.report }
       } else {
         // The effort setting overrides; `inherit` uses the step's (the Agent call's, else the session's).
@@ -319,11 +325,11 @@ export const register: Register = (on, options) => {
           instructions: await instructions($, viaHandback && (await serverReview($)), cfg.web),
           input: plan.input,
           previous_response_id: plan.previous_response_id,
-          tools: cfg.web === 'off' ? MANIFEST : [...MANIFEST, webTool(cfg.web)],
+          tools: cfg.web === 'off' ? MANIFEST : [...MANIFEST, webTool(cfg.web, cfg.webBudget)],
         }, next.signal)
         await recordSpend($, model, t.costUsd ?? 0, run.steps === 0)
         const web = addWeb(run.web, t)
-        out = stepFromTurn(t, viaHandback, web)
+        out = stepFromTurn(t, viaHandback, web, cfg.webBudget)
         saved = {
           responseId: t.id,
           pending: out.pending,
@@ -336,7 +342,7 @@ export const register: Register = (on, options) => {
         }
       }
     } catch (err) {
-      out = report(withWeb(`GPT run failed: ${(err as Error).message}`, run.web), seed, viaHandback)
+      out = report(withWeb(`GPT run failed: ${(err as Error).message}`, run.web, cfg.webBudget), seed, viaHandback)
       saved = { ...run, pending: [], handedBack: true, report: out.report }
     }
     await $.state.set(ref, saved)

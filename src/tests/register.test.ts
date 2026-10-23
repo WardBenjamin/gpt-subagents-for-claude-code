@@ -222,12 +222,35 @@ describe('register', () => {
       'Node 26.12.1 is out.',
       '',
       'Web activity (at OpenAI):',
-      '- searched "node 26 release"',
+      '- searched "node 26 release" (2 results)',
       '- opened https://nodejs.org/en/blog/release/v26.12.1',
       '- cited, not opened: https://github.com/nodejs/node/releases (in search results)',
       '- cited, not opened: https://example.com/elsewhere (not seen)',
     ].join('\n'))
   })
+
+  test('one page action that returned 13 pages lists them all, and none of them reads as cited but not opened', { options: { web: true } }, async ($, on) => {
+    const pages = Array.from({ length: 13 }, (_, i) => `https://nodejs.org/en/blog/release/v26.${i}.0`)
+    world(on, 'gpt:sol', [{ id: 'resp_b', status: 'completed', text: 'Done.', webActions: [{ type: 'open_page', url: pages[12], pages }], citations: [pages[0], pages[5], `${pages[12]}?utm_source=openai`] }])
+    await start($)
+    const { result } = await step($)
+    const message = (result.toolUses[0]?.input as any).message as string
+    expect(message).toContain('- opened 13 pages:\n  - https://nodejs.org/en/blog/release/v26.0.0\n')
+    expect(message.split('\n').filter(l => l.startsWith('  - ')).length).toBe(13)
+    expect(message).not.toContain('cited, not opened')
+  })
+
+  for (const [budget, hint] of [['default', true], ['unlimited', false]] as const) {
+    test(`the web tool's notices end the list, with the budget hint only on the default budget (${budget})`, { options: { web: true, webBudget: budget } }, async ($, on) => {
+      const w = world(on, 'gpt:sol', [{ id: 'resp_t', status: 'completed', text: 'Partial.', webActions: [{ type: 'search', query: 'q', sources: ['https://a.example'] }], notices: ['Return token budget exhausted.'] }])
+      await start($)
+      const { result } = await step($)
+      const message = (result.toolUses[0]?.input as any).message as string
+      expect(message).toContain('- the web tool said: "Return token budget exhausted."')
+      expect(message.includes('/gpt settings webBudget unlimited')).toBe(hint)
+      expect(w.bridgeCalls[0]?.args.tools).toContainEqual(budget === 'unlimited' ? { type: 'web_search', return_token_budget: 'unlimited' } : { type: 'web_search' })
+    })
+  }
 
   test('a run that never used the web reports no web activity', { options: { web: true } }, async ($, on) => {
     world(on, 'gpt:sol', [{ id: 'resp_n2', status: 'completed', text: 'Done.', calls: [] }])
